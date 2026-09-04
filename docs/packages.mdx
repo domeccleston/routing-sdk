@@ -3,13 +3,15 @@ title: "Packages"
 description: "Choose the building blocks for your integration."
 ---
 
-| Package                      | Responsibility                                                    | Documentation                                    |
-| ---------------------------- | ----------------------------------------------------------------- | ------------------------------------------------ |
-| `@open-routing/core`         | Schemas, routing rules, assignments, provider and store contracts | [Router API](/reference/router)                  |
-| `@open-routing/store-sqlite` | Durable local assignment and submission state                     | [Storage](/reference/storage)                    |
-| `@open-routing/attio`        | CRM ownership lookup                                              | [Integrations](/integrations)                    |
-| `@open-routing/pdl`          | Company enrichment                                                | [Integrations](/integrations)                    |
-| `@open-routing/dashboard`    | Local inspection of submissions and routing state                 | [Contact-sales example](/examples/contact-sales) |
+| Package                      | Responsibility                                                         | Documentation                                    |
+| ---------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------ |
+| `open-routing`               | Top-level router with persistent SQLite and managed storage lifecycle  | [Router API](/reference/router)                  |
+| `@open-routing/core`         | Storage-independent schemas, routing rules, and contracts              | [Router API](/reference/router)                  |
+| `@open-routing/store-sqlite` | Durable local assignment and submission state                          | [Storage](/reference/storage)                    |
+| `@open-routing/attio`        | CRM ownership lookup                                                   | [Integrations](/integrations)                    |
+| `@open-routing/pdl`          | Company enrichment                                                     | [Integrations](/integrations)                    |
+| `@open-routing/dashboard`    | Local inspection of submissions and routing state                      | [Contact-sales example](/examples/contact-sales) |
+| `@open-routing/research`     | Agent sessions, sandbox execution, company findings and routing review | [Contact-sales example](/examples/contact-sales) |
 
 Start with the [quickstart](/quickstart) for a working combination. These packages
 are currently consumed from the repository workspace.

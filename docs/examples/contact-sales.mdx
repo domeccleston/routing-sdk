@@ -44,12 +44,12 @@ is separate: it must not repeat an already committed assignment.
 
 ## Adapt it to your form
 
-Edit `examples/contact-sales/router.config.ts` to change fields and rule order.
+Edit `apps/demo/router.config.ts` to change fields and rule order.
 Keep the non-sales rule before ownership and territory rules so a support request
 never consumes a sales rotation. Put ownership ahead of territory assignment if
 existing relationships take precedence.
 
-Configure representatives and territories in `examples/contact-sales/fixtures/routing/`.
+Configure representatives and territories in `apps/demo/fixtures/routing/`.
 Add providers using the [integration guide](/integrations).
 
 The server and dashboard are local tools. Use the [production guide](/guides/production)

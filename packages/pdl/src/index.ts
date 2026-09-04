@@ -7,7 +7,7 @@ import type {
 } from "@open-routing/core";
 
 export interface PdlOptions {
-  apiKey: string;
+  apiKey?: string;
   /** Per-request deadline, including reading the response. Default: 2 seconds. */
   timeoutMs?: number;
   /** PDL match confidence, 1–10. Default: 6. */
@@ -52,12 +52,12 @@ function failure(status: number): CompanyEnrichmentResult {
 
 /** Server-side PDL Company Enrichment v5 adapter. Makes one request, without retries. */
 export function pdl({
-  apiKey,
+  apiKey = process.env.PDL_API_KEY,
   timeoutMs = 2_000,
   minLikelihood = 6,
   resolveRedirects = true,
   redirectTimeoutMs = 800,
-}: PdlOptions): CompanyEnrichmentProvider {
+}: PdlOptions = {}): CompanyEnrichmentProvider {
   if (typeof apiKey !== "string" || !apiKey.trim()) throw new Error("PDL requires an API key");
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 2_147_483_647)
     throw new Error("PDL timeoutMs must be a positive integer up to 2147483647");

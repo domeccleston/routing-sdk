@@ -31,25 +31,19 @@ Create `first-assignment.ts` at the repository root. The example uses illustrati
 booking URLs; replace them with your own before sending visitors to them.
 
 ```ts
-import { createRouter, defineSchema } from "@open-routing/core";
-import { sqliteStore } from "@open-routing/store-sqlite";
-
-const schema = defineSchema({
-  workEmail: { type: "email", required: true, privacy: "mask" },
-});
-const store = sqliteStore(":memory:", schema);
+import { createRouter } from "open-routing";
 const router = createRouter({
-  schema,
+  schema: { workEmail: { type: "email", required: true, privacy: "mask" } },
   people: {
     alex: { name: "Alex", bookingUrl: "https://calendar.example/alex" },
     sam: { name: "Sam", bookingUrl: "https://calendar.example/sam" },
   },
   pools: {
-    sales: { members: ["alex", "sam"], strategy: "round-robin" },
+    sales: { members: ["alex", "sam"] },
   },
-  rules: [{ id: "new-sales-lead", when: { all: [] }, assign: { pool: "sales" } }],
+  rules: [{ id: "new-sales-lead", assign: { pool: "sales" } }],
   fallback: { redirect: "/thanks" },
-  store,
+  database: ":memory:",
 });
 
 try {
@@ -62,11 +56,11 @@ try {
   console.log(first.id === retry.id); // true: same lead, same assignment
   console.log(next.personId); // sam: a new lead advances the pool
 } finally {
-  store.close();
+  await router.close();
 }
 ```
 
-`when: { all: [] }` matches every validated input. Place this catch-all rule last
+Omitting `when` matches every validated input. Place this catch-all rule last
 when you add more specific rules.
 
 ## 3. Run it
@@ -84,7 +78,7 @@ sam
 ```
 
 This example starts with a fresh in-memory store every time. For persistence across
-process restarts, change `":memory:"` to `"./.data/routing.sqlite"`. Reusing a key
+process restarts, omit `database` to use `.data/routing.sqlite`, or provide your own path. Reusing a key
 returns its saved result even if the input or rules have since changed.
 
 ## 4. Connect your application

@@ -16,7 +16,7 @@ export interface Person {
 export interface Pool {
   name?: string;
   members: readonly string[];
-  strategy: "round-robin";
+  strategy?: "round-robin";
 }
 export interface PoolState {
   poolId: string;
@@ -44,7 +44,7 @@ export type Condition =
   | { field: string; in: readonly unknown[] }
   | { field: string; gte: number }
   | { field: string; lte: number };
-export type RoutingRule = { id: string; when: Condition } & (
+export type RoutingRule = { id: string; when?: Condition } & (
   | { assign: { pool: string } | { person: string } | { owner: true }; redirect?: never }
   | { redirect: string; reason?: string; assign?: never }
 );
@@ -84,7 +84,7 @@ export interface AssignmentStore {
 export interface RouterConfig<Schema extends FormSchema> {
   schema: Schema;
   people: Readonly<Record<string, Person>>;
-  pools: Readonly<Record<string, Pool>>;
+  pools?: Readonly<Record<string, Pool>>;
   rules: readonly RoutingRule[];
   fallback: { redirect: string };
   store: AssignmentStore;
@@ -153,7 +153,10 @@ function validateUrl(value: string, relative = false) {
 export function createRouter<const Schema extends FormSchema>(config: RouterConfig<Schema>) {
   const people = new Map(Object.entries(config.people).map(([id, person]) => [id, { ...person }]));
   const pools = new Map(
-    Object.entries(config.pools).map(([id, pool]) => [id, { ...pool, members: [...pool.members] }]),
+    Object.entries(config.pools ?? {}).map(([id, pool]) => [
+      id,
+      { ...pool, strategy: pool.strategy ?? "round-robin", members: [...pool.members] },
+    ]),
   );
   const rules = structuredClone(config.rules);
   for (const person of people.values()) validateUrl(person.bookingUrl);
@@ -230,7 +233,7 @@ export function createRouter<const Schema extends FormSchema>(config: RouterConf
         ...(candidates ? { candidates } : {}),
       });
     for (const rule of rules) {
-      if (!evaluate(rule.when, context, rule.id, trace)) continue;
+      if (rule.when && !evaluate(rule.when, context, rule.id, trace)) continue;
       const result = { ...base(), ruleId: rule.id };
       if (rule.redirect !== undefined)
         return commit({

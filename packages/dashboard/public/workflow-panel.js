@@ -7,7 +7,7 @@ function node(tag, text, className) {
 
 export function workflowLabel(workflow) {
   if (!workflow) return "No research workflow";
-  if (workflow.status === "awaiting_approval") return "Needs approval";
+  if (workflow.status === "awaiting_approval") return "Needs review";
   if (workflow.status === "completed")
     return workflow.context?.mode === "fixture"
       ? "Workflow complete · mock CRM"
@@ -18,6 +18,7 @@ export function workflowLabel(workflow) {
 export function workflowPanel(workflow, { token, onChanged, onBusy }) {
   const fixture = workflow?.context?.mode === "fixture";
   const liveAttio = workflow?.context?.mode === "live-attio";
+  const liveResearch = workflow?.context?.researchMode === "live";
   const panel = node("section", undefined, "workflow-panel");
   const heading = node("div", undefined, "detail-heading");
   heading.append(node("h3", "Research", "section-title"));
@@ -29,10 +30,24 @@ export function workflowPanel(workflow, { token, onChanged, onBusy }) {
   heading.append(node("span", workflowLabel(workflow), `badge ${workflow.status}`));
   if (fixture)
     panel.append(
-      node("p", "Demo scenario · notifications and CRM updates are simulated", "pool-note"),
+      node(
+        "p",
+        liveResearch
+          ? "Live research · notifications and CRM updates are simulated"
+          : "Demo scenario · notifications and CRM updates are simulated",
+        "pool-note",
+      ),
     );
   if (liveAttio)
-    panel.append(node("p", "Live Attio · research and notifications are simulated", "pool-note"));
+    panel.append(
+      node(
+        "p",
+        liveResearch
+          ? "Live Attio and research · notifications are simulated"
+          : "Live Attio · research and notifications are simulated",
+        "pool-note",
+      ),
+    );
   const crmUrl = workflow.outputs?.crm?.url;
   if (typeof crmUrl === "string") {
     try {
@@ -53,6 +68,17 @@ export function workflowPanel(workflow, { token, onChanged, onBusy }) {
       ? workflow.research.brief.replace(/^Fixture research for /, "Demo scenario for ")
       : workflow.research.brief;
     panel.append(node("p", brief, "research-brief"));
+    if (workflow.research.review) {
+      panel.append(
+        node("h4", `Routing review · ${workflow.research.review.status.replaceAll("-", " ")}`),
+        node("p", workflow.research.review.reason),
+      );
+    }
+    for (const finding of workflow.research.findings ?? []) {
+      panel.append(node("p", finding.description));
+    }
+    if (workflow.research.session)
+      panel.append(node("p", `Research session: ${workflow.research.session.id}`, "pool-note"));
     if (workflow.research.sources.length) {
       const sources = node("ul");
       for (const source of workflow.research.sources) {
@@ -152,10 +178,13 @@ export function workflowPanel(workflow, { token, onChanged, onBusy }) {
     note.required = true;
     label.append(note);
     controls.append(label);
-    for (const [text, action] of [
-      ["Accept changes", "accept-changes"],
-      ["Keep original", "keep-initial"],
-    ]) {
+    const actions = workflow.research?.proposedChanges.length
+      ? [
+          ["Accept changes", "accept-changes"],
+          ["Keep original", "keep-initial"],
+        ]
+      : [["Reviewed — keep assignment", "keep-initial"]];
+    for (const [text, action] of actions) {
       const button = node("button", text);
       button.type = "button";
       button.onclick = () => {

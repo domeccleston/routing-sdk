@@ -133,7 +133,7 @@ expiry. Applications can inspect `list({ status: "awaiting_approval" })` and
 
 ## Contact-sales example and migration
 
-`examples/contact-sales/src/lead-workflow.ts` owns the example's research → notify →
+`apps/demo/src/lead-workflow.ts` owns the example's research → notify →
 optional approval → CRM policy and its research report shape. Its presentation
 helper keeps the dashboard's existing research/resolution view unchanged.
 `update-attio.ts` is an ordinary step dependency, not part of this runtime.
@@ -146,7 +146,7 @@ workers before upgrading; do not run v3 and v4 implementations against one datab
 Run the entirely offline example:
 
 ```sh
-npm run workflow:demo --workspace=@open-routing/example-contact-sales
+npm run workflow:demo --workspace=@open-routing/demo
 ```
 
 The local HTTP example uses demo research and the real Attio adapter against an

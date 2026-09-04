@@ -1,0 +1,13 @@
+{
+  "name": "@open-routing/example-workflow-approval",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "@open-routing/store-sqlite": "0.0.0",
+    "open-routing": "0.0.0"
+  }
+}

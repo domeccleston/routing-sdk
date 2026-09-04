@@ -1,0 +1,12 @@
+{
+  "name": "@open-routing/example-round-robin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "open-routing": "0.0.0"
+  }
+}

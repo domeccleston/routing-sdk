@@ -4,28 +4,42 @@ description: "Configure routing, validate input, and create an assignment."
 ---
 
 ```ts
-import { createRouter } from "@open-routing/core";
+import { createRouter } from "open-routing";
 ```
 
 ## createRouter(config)
 
 Returns a router with `schema`, `parse`, `assign`, `getPoolState`, and
-`listPoolStates`. Use the [quickstart](/quickstart) for a complete configuration.
+`listPoolStates`, and `close`. Use the [quickstart](/quickstart) for a complete configuration.
 
-| Property    | Required | Meaning                                                          |
-| ----------- | -------- | ---------------------------------------------------------------- |
-| `schema`    | Yes      | Form definition created with `defineSchema`                      |
-| `people`    | Yes      | Map of person IDs to `{ name, bookingUrl, active? }`             |
-| `pools`     | Yes      | Map of pool IDs to `{ name?, members, strategy: "round-robin" }` |
-| `rules`     | Yes      | Ordered array of routing rules; IDs must be unique               |
-| `fallback`  | Yes      | `{ redirect }` for an unassigned lead                            |
-| `store`     | Yes      | An `AssignmentStore` implementation                              |
-| `providers` | No       | Optional `enrichment` and `ownership` providers                  |
+| Property    | Required | Meaning                                                                    |
+| ----------- | -------- | -------------------------------------------------------------------------- |
+| `schema`    | Yes      | Inline form definition or one created with `defineSchema`                  |
+| `people`    | Yes      | Map of person IDs to `{ name, bookingUrl, active? }`                       |
+| `pools`     | No       | Map of pool IDs to `{ name?, members, strategy? }`; round-robin by default |
+| `rules`     | Yes      | Ordered array of routing rules; IDs must be unique                         |
+| `fallback`  | Yes      | `{ redirect }` for an unassigned lead                                      |
+| `database`  | No       | SQLite filename, default `.data/routing.sqlite`; `:memory:` for tests      |
+| `store`     | No       | Custom `AssignmentStore`, mutually exclusive with `database`               |
+| `providers` | No       | Optional `enrichment` and `ownership` providers                            |
 
 A pool requires nonempty, unique member IDs that exist in `people`. Named rule
 targets must exist. People are active unless `active` is `false`. Booking URLs
 must use HTTPS without embedded credentials; fallback and rule redirects also
 accept local absolute paths such as `/thanks`.
+
+Omit a rule’s `when` to make it unconditional. Put catch-all rules last.
+
+## await router.close()
+
+Closes router-created SQLite storage; repeated calls are safe. Wait for in-flight
+assignments before closing. Caller-supplied stores remain caller-owned. The default
+database path is relative to the working directory at construction. Use separate
+databases for independent routing configurations; pool IDs and idempotency keys
+share a database namespace.
+
+The lower-level `@open-routing/core` entry point still requires `store` and does
+not manage its lifecycle. It has no SQLite dependency.
 
 ## router.parse(rawInput, options?)
 

@@ -1,7 +1,7 @@
 import type { CompanyLookup, CrmOwnershipProvider, OwnershipResult } from "@open-routing/core";
 
 export interface AttioOptions {
-  apiKey: string;
+  apiKey?: string;
   baseUrl?: string;
   companyObject?: string;
   ownerAttribute?: string;
@@ -65,7 +65,9 @@ function failure(status: number): OwnershipResult {
   return { status: "unavailable", reason: "provider_error" };
 }
 
-export function attio(options: AttioOptions): AttioClient {
+export function attio(options: AttioOptions = {}): AttioClient {
+  const apiKey = options.apiKey ?? process.env.ATTIO_API_KEY;
+  if (typeof apiKey !== "string" || !apiKey.trim()) throw new Error("Attio requires an API key");
   const baseUrl = (options.baseUrl ?? "https://api.attio.com/v2").replace(/\/$/, "");
   const companyObject = options.companyObject ?? "companies";
   const ownerAttribute = options.ownerAttribute ?? "account_owner";
@@ -81,7 +83,7 @@ export function attio(options: AttioOptions): AttioClient {
         ? AbortSignal.any([init.signal, AbortSignal.timeout(timeoutMs)])
         : AbortSignal.timeout(timeoutMs),
       headers: {
-        Authorization: `Bearer ${options.apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         ...init?.headers,
       },
     });

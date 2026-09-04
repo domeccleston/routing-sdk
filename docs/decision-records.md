@@ -49,7 +49,7 @@ administrator. Privacy flags are not encryption or a retention policy.
 
 The local database is not encrypted by the SDK. Keep it outside Git and restrict
 access to both its files and the dashboard. The example uses
-`examples/contact-sales/.data/routing.sqlite`.
+`apps/demo/.data/routing.sqlite`.
 
 ## Assignment and audit failures
 

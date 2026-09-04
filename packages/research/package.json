@@ -1,0 +1,17 @@
+{
+  "name": "@open-routing/research",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "src",
+    "sandbox"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}

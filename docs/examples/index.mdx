@@ -15,6 +15,32 @@ description: "Start from a complete application or a focused integration recipe.
 The examples demonstrate how to use the SDK. [Scenarios](/scenarios) explain
 which routing policies to choose and how to combine them.
 
+## Focused, runnable examples
+
+Each directory under `examples/` contains one independent `index.ts` and README.
+After `npm install` at the repository root, run:
+
+```sh
+npm run start --workspace=@open-routing/example-round-robin
+```
+
+Replace `round-robin` with another example name:
+
+| Name                | Demonstrates                                                      |
+| ------------------- | ----------------------------------------------------------------- |
+| `round-robin`       | Assignment rotation, idempotent retries, and next person          |
+| `territories`       | Independent round-robin pools selected by country                 |
+| `crm-ownership`     | Existing owner before new-account rotation; optional Attio lookup |
+| `enrichment`        | Company size rules; optional PDL enrichment                       |
+| `research`          | A sandboxed Pi research session with Parallel search              |
+| `workflow-approval` | Immediate calendar URL, then background approval and resumption   |
+
+All except `research` run offline by default. Research requires Docker and model/search
+credentials and may incur charges; read its README before running it.
+
+The complete form and dashboard live separately in `apps/demo`; start them with
+`npm run dev`.
+
 <div className="planned-feature">
   <span className="planned-label">Planned · Framework recipes</span>
   <h2>Next.js, Express, and serverless handlers</h2>

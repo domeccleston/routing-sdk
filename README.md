@@ -2,25 +2,39 @@
 
 An open-source routing engine for contact-sales forms. This repository is at
 an early implementation stage, with durable round-robin lead assignment and a
-local example and dashboard.
+local demo and dashboard.
 
 ## Repository structure
 
 ```text
 packages/
+  open-routing/         Top-level router with persistent SQLite by default
   core/                 Typed schemas, provider contracts, and routing engine
   attio/                Attio CRM ownership provider
   pdl/                  People Data Labs company enrichment provider
   store-sqlite/         Assignments, round-robin state, submissions, and durable lead workflows
   dashboard/            Local admin UI with research review controls
+  research/             Company research agents, sandbox sessions and routing review
+apps/
+  demo/                 Complete form, dashboard, fixtures, and workflow integration
 examples/
-  contact-sales/        Self-contained form, fixtures, server, and tests
+  round-robin/          Rotate between people and retry safely
+  territories/         Select a territory and rotate within its pool
+  crm-ownership/        Prefer an existing CRM owner
+  enrichment/           Route using enriched company size
+  research/             Research a company with a sandboxed agent
+  workflow-approval/    Pause background work for human review
 ```
 
-Production packages do not import from `examples`. Each integration owns its
-implementation and contract tests; each example owns its demo data and UI.
+Production packages do not import from `examples` or `apps`. Each example is an
+independent, single-scenario program. See [the examples](examples/README.md) for
+run commands and prerequisites. The [demo application](apps/demo/README.md)
+combines these capabilities into a full contact-sales flow.
 
 ## Development
+
+Start with `import { createRouter } from "open-routing"`. See the
+[top-level API](packages/open-routing/README.md) for defaults and storage overrides.
 
 Requires Node.js 22 or newer.
 
@@ -37,14 +51,14 @@ the routing policy, and issues a `303` directly to Cal.com or the success page.
 
 The minimum SDK lives in `packages/core`, and the Attio adapter lives in
 `packages/attio`. The example router configuration is
-`examples/contact-sales/router.config.ts`.
+`apps/demo/router.config.ts`.
 
-## Contact-sales example
+## Demo application
 
-- `examples/contact-sales/fixtures/routing`: form schema, representatives,
+- `apps/demo/fixtures/routing`: form schema, representatives,
   and territories. Ordered rules live in `router.config.ts`.
-- `examples/contact-sales/fixtures/attio`: deterministic CRM and enrichment data.
-- `examples/contact-sales/fixtures/routing/scenarios.ts`: shared form presets and end-to-end expected decisions.
+- `apps/demo/fixtures/attio`: deterministic CRM and enrichment data.
+- `apps/demo/fixtures/routing/scenarios.ts`: shared form presets and end-to-end expected decisions.
 
 Default tests make no network requests. Live Attio contract tests will be
 opt-in via `RUN_ATTIO_INTEGRATION_TESTS=1` and `ATTIO_API_KEY`.
@@ -87,10 +101,11 @@ Attio rejects the `.example` TLD; this runner uses a subdomain of reserved
 `example.com`. Tests in `npm run check` remain offline.
 
 For opt-in background research, notification, approval and CRM stages, see
+[the research SDK](packages/research/README.md) and
 [SQLite lead workflows](packages/store-sqlite/README.md). Run the offline example:
 
 ```sh
-npm run workflow:demo --workspace=@open-routing/example-contact-sales
+npm run workflow:demo --workspace=@open-routing/demo
 ```
 
 The HTTP example now queues fixture research with every valid assignment and runs
@@ -102,7 +117,7 @@ immediate; accepting changes does not change an existing booking.
 
 Both examples use simulated notifications and the Attio adapter with an in-memory
 demo transport; they make no external writes. The step sequence and approval policy
-live in `examples/contact-sales/src/lead-workflow.ts`, not in SQLite. Applications
+live in `apps/demo/src/lead-workflow.ts`, not in SQLite. Applications
 supply their own agent, messaging and CRM steps. The local admin's
 token and same-origin guards are not a replacement for production authentication.
 
