@@ -36,14 +36,19 @@ combines these capabilities into a full contact-sales flow.
 Start with `import { createRouter } from "open-routing"`. See the
 [top-level API](packages/open-routing/README.md) for defaults and storage overrides.
 
-Requires Node.js 22 or newer.
+Requires Node.js 22 or newer and pnpm 10.20.0 (pinned in `packageManager`).
+If using Corepack, run `corepack enable` first.
 
 ```sh
-npm install
-npm test
-npm run typecheck
-npm run dev
+pnpm install
+pnpm test
+pnpm run typecheck
+pnpm run dev
 ```
+
+CI uses `pnpm install --frozen-lockfile`. Internal dependencies use `workspace:*`;
+workspace membership and allowed native dependency builds are configured in
+`pnpm-workspace.yaml`. Do not generate an npm lockfile for this repository.
 
 The example form is served at <http://localhost:3000>. Its POST handler parses
 the strongly typed form, resolves fixture enrichment and CRM ownership, applies
@@ -64,15 +69,15 @@ Default tests make no network requests. Live Attio contract tests will be
 opt-in via `RUN_ATTIO_INTEGRATION_TESTS=1` and `ATTIO_API_KEY`.
 
 No credential is committed. Export it in the shell or place it in the ignored
-root `.env.local` file before running `npm run test:attio`.
+root `.env.local` file before running `pnpm run test:attio`.
 
 ## Local dashboard
 
-For live company enrichment, export `PDL_API_KEY` before running `npm run dev`.
+For live company enrichment, export `PDL_API_KEY` before running `pnpm run dev`.
 Without it the example remains fixture-only. See [the PDL adapter](packages/pdl/README.md)
 for configuration, normalized fields, and matching behavior. Default tests never call PDL.
 
-With `npm run dev` running, open <http://localhost:3000/admin>. New form submissions
+With `pnpm run dev` running, open <http://localhost:3000/admin>. New form submissions
 are stored in SQLite and shown with their decisions and provider data. See
 [the data model](docs/decision-records.md) for privacy and lifecycle details.
 The [pools view](http://localhost:3000/admin/pools) shows each round-robin's next
@@ -84,7 +89,7 @@ industry, HQ country, and rep assignments. Booking confirmations are not tracked
 
 ### Live Attio end-to-end run
 
-`npm run dev:attio` loads `.env.local` and enables real Attio reads/writes.
+`pnpm run dev:attio` loads `.env.local` and enables real Attio reads/writes.
 Set `ATTIO_API_KEY` and `ATTIO_WORKSPACE_MEMBER_ID` (the example maps its sample
 reps to this one real member). The workspace must have single-value text attributes
 `routing_research` and `routing_qualification`, plus `account_owner`.
@@ -93,19 +98,19 @@ ID so switching modes cannot send old demo jobs to Attio.
 
 For a labelled, repeatable test, run the server with `PORT=3002`,
 `ATTIO_E2E_DOMAIN=routing-sdk-e2e-YOUR-RUN.example.com` and a separate
-`ROUTING_DB_PATH`. Then run `npm run test:attio:e2e` with the same domain and
+`ROUTING_DB_PATH`. Then run `pnpm run test:attio:e2e` with the same domain and
 member ID. It submits the form, verifies the calendar redirect and approval hold,
 approves the test proposal, reads back the real Attio owner/research/qualification,
 and checks replay deduplication. It retains the labelled company for inspection.
 Attio rejects the `.example` TLD; this runner uses a subdomain of reserved
-`example.com`. Tests in `npm run check` remain offline.
+`example.com`. Tests in `pnpm run check` remain offline.
 
 For opt-in background research, notification, approval and CRM stages, see
 [the research SDK](packages/research/README.md) and
 [SQLite lead workflows](packages/store-sqlite/README.md). Run the offline example:
 
 ```sh
-npm run workflow:demo --workspace=@open-routing/demo
+pnpm --filter @open-routing/demo run workflow:demo
 ```
 
 The HTTP example now queues fixture research with every valid assignment and runs
@@ -124,10 +129,10 @@ token and same-origin guards are not a replacement for production authentication
 The Mintlify site lives in `docs/`. Preview it at <http://localhost:3001>:
 
 ```sh
-npm run docs:dev
+pnpm run docs:dev
 ```
 
-Run `npm run docs:check` to validate the site and check internal links. These
+Run `pnpm run docs:check` to validate the site and check internal links. These
 commands download and run a pinned Mintlify CLI on first use.
 
 For Mintlify project `6a9a82f204bdc285e8c8bca2`, configure
@@ -139,16 +144,16 @@ The project ID is dashboard metadata; it does not belong in `docs.json`.
 
 ## Code quality
 
-Run `npm run check` for all checks (Oxlint, Oxfmt, Knip, TypeScript, and tests).
+Run `pnpm run check` for all checks (Oxlint, Oxfmt, Knip, TypeScript, and tests).
 The same command runs in GitHub Actions; live Attio tests are excluded.
 
-| Command                | Purpose                                         |
-| ---------------------- | ----------------------------------------------- |
-| `npm run lint`         | Lint all workspaces; warnings fail the check    |
-| `npm run lint:fix`     | Apply safe lint fixes                           |
-| `npm run format`       | Format source, markup, styles, config, and docs |
-| `npm run format:check` | Check formatting without modifying files        |
-| `npm run knip`         | Find unused files, exports, and dependencies    |
+| Command                 | Purpose                                         |
+| ----------------------- | ----------------------------------------------- |
+| `pnpm run lint`         | Lint all workspaces; warnings fail the check    |
+| `pnpm run lint:fix`     | Apply safe lint fixes                           |
+| `pnpm run format`       | Format source, markup, styles, config, and docs |
+| `pnpm run format:check` | Check formatting without modifying files        |
+| `pnpm run knip`         | Find unused files, exports, and dependencies    |
 
 Knip uses package exports as SDK entry points and explicitly includes browser
 scripts and package tests. Generated files and local databases are excluded.

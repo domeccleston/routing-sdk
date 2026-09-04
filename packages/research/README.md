@@ -44,7 +44,7 @@ automatic review hold. A syntactically valid report does not establish accuracy.
 
 ## Runtime
 
-Build the included image from the monorepo root with `npm run research:build`.
+Build the included image from the monorepo root with `pnpm run research:build`.
 It installs Pi 0.85.0, Node, Python, curl and git. Docker must be running.
 Use `docker({ image })` for a custom image. Pi owns the complete agent loop:
 there is no SDK turn count, prescribed search sequence or tool allowlist.

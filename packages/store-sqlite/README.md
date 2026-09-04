@@ -146,7 +146,7 @@ workers before upgrading; do not run v3 and v4 implementations against one datab
 Run the entirely offline example:
 
 ```sh
-npm run workflow:demo --workspace=@open-routing/demo
+pnpm --filter @open-routing/demo run workflow:demo
 ```
 
 The local HTTP example uses demo research and the real Attio adapter against an

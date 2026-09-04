@@ -2,22 +2,17 @@
   "name": "open-routing-monorepo",
   "version": "0.0.0",
   "private": true,
-  "workspaces": [
-    "packages/*",
-    "apps/*",
-    "examples/*"
-  ],
   "type": "module",
   "scripts": {
-    "docs:dev": "cd docs && npx --yes mint@4.2.873 dev --port 3001",
-    "docs:check": "cd docs && npx --yes mint@4.2.873 validate && npx --yes mint@4.2.873 broken-links",
+    "docs:dev": "cd docs && pnpm dlx mint@4.2.873 dev --port 3001",
+    "docs:check": "cd docs && pnpm dlx mint@4.2.873 validate && pnpm dlx mint@4.2.873 broken-links",
     "lint": "oxlint --deny-warnings .",
     "lint:fix": "oxlint --fix .",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "knip": "knip",
-    "check": "npm run lint && npm run format:check && npm run knip && npm run typecheck && npm test",
-    "dev": "npm run dev --workspace=@open-routing/demo",
+    "check": "pnpm run lint && pnpm run format:check && pnpm run knip && pnpm run typecheck && pnpm test",
+    "dev": "pnpm --filter @open-routing/demo run dev",
     "dev:attio": "ATTIO_LIVE=1 node --env-file-if-exists=.env.local --import tsx apps/demo/src/server.ts",
     "dev:research": "RESEARCH_LIVE=1 node --env-file-if-exists=.env.local --env-file-if-exists=.env.research.local --import tsx apps/demo/src/server.ts",
     "test:attio:e2e": "node --env-file-if-exists=.env.local --import tsx apps/demo/scripts/attio-e2e.ts",
@@ -41,5 +36,6 @@
   },
   "engines": {
     "node": ">=22"
-  }
+  },
+  "packageManager": "pnpm@10.20.0"
 }

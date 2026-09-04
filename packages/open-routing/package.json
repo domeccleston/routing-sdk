@@ -5,7 +5,7 @@
   "type": "module",
   "exports": "./src/index.ts",
   "dependencies": {
-    "@open-routing/core": "0.0.0",
-    "@open-routing/store-sqlite": "0.0.0"
+    "@open-routing/core": "workspace:*",
+    "@open-routing/store-sqlite": "workspace:*"
   }
 }

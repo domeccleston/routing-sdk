@@ -4,10 +4,10 @@ The simulated company has 750 employees and goes to the enterprise rep. Missing 
 
 For real enrichment, set `PDL_LIVE=1`, `PDL_API_KEY`, and `COMPANY_DOMAIN`. Root `.env.local` is loaded automatically. This calls PDL and may consume credits.
 
-From the repository root, after `npm install`:
+From the repository root, after `pnpm install`:
 
 ```sh
-npm run start --workspace=@open-routing/example-enrichment
+pnpm --filter @open-routing/example-enrichment run start
 ```
 
 Read [index.ts](index.ts) for the complete scenario. The in-memory SQLite store resets on each run.

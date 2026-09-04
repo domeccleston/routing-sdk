@@ -66,7 +66,7 @@ Error bodies, raw profiles, and credentials are never returned or logged.
 
 ## Contact-sales example
 
-Export `PDL_API_KEY` in your server environment and run `npm run dev`. With a key,
+Export `PDL_API_KEY` in your server environment and run `pnpm run dev`. With a key,
 the example uses live PDL enrichment; without one, it keeps using fixtures. The dev
 command does not automatically load `.env.local`. CRM ownership still uses fixtures.
 Real lookups can consume PDL credits; synthetic `.example` presets are designed

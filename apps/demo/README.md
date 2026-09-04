@@ -39,12 +39,12 @@ workflow. `src/update-attio.ts` owns the explicit CRM write policy.
 
 From the repository root:
 
-| Command                                                | Behavior                                             |
-| ------------------------------------------------------ | ---------------------------------------------------- |
-| `npm run dev`                                          | Offline demo at <http://localhost:3000>              |
-| `npm run dev:attio`                                    | Real Attio, simulated research                       |
-| `npm run dev:research`                                 | Real SDK research; CRM mode configured independently |
-| `npm run workflow:demo --workspace=@open-routing/demo` | Offline workflow walkthrough                         |
+| Command                                              | Behavior                                             |
+| ---------------------------------------------------- | ---------------------------------------------------- |
+| `pnpm run dev`                                       | Offline demo at <http://localhost:3000>              |
+| `pnpm run dev:attio`                                 | Real Attio, simulated research                       |
+| `pnpm run dev:research`                              | Real SDK research; CRM mode configured independently |
+| `pnpm --filter @open-routing/demo run workflow:demo` | Offline workflow walkthrough                         |
 
 For Attio, configure `ATTIO_API_KEY` and `ATTIO_WORKSPACE_MEMBER_ID` in the
 ignored root `.env.local`. See the [root README](../../README.md) for the required
@@ -52,7 +52,7 @@ Attio attributes and live test setup. All demo rep IDs map to that single member
 
 For research, put `OPENROUTER_API_KEY`, `PARALLEL_API_KEY`, and optionally
 `RESEARCH_MODEL` in the ignored root `.env.research.local`. Start Docker and run
-`npm run research:build` once. The default model is `openai/gpt-5.6-luna`.
+`pnpm run research:build` once. The default model is `openai/gpt-5.6-luna`.
 
 The server uses demo research unless `RESEARCH_LIVE=1`. `ATTIO_LIVE` independently
 controls real CRM writes. Notifications are simulated. Demo research controls
@@ -66,11 +66,11 @@ qualification proposals use their existing allowlisted action.
 
 ## Test
 
-`npm test` is offline by default. Live commands make paid provider calls:
+`pnpm test` is offline by default. Live commands make paid provider calls:
 
-- `npm run test:research:live`: one company-size routing smoke test.
-- `npm run test:research:review`: size mismatch, existing-owner precedence and an unknown company.
-- `npm run test:attio:e2e`: real form-to-Attio integration against a labelled test company.
+- `pnpm run test:research:live`: one company-size routing smoke test.
+- `pnpm run test:research:review`: size mismatch, existing-owner precedence and an unknown company.
+- `pnpm run test:attio:e2e`: real form-to-Attio integration against a labelled test company.
 
 Research tests use isolated in-memory workflow queues and never execute CRM
 writes or real notifications. Reports and Pi transcripts remain under

@@ -8,17 +8,17 @@ without CRM credentials or network requests.
 
 ## 1. Set up the SDK
 
-Requires Node.js 22 or later and npm. Until packages are published, run the example
+Requires Node.js 22 or later and pnpm 10.20.0. Until packages are published, run the example
 from a checkout of this repository:
 
 ```sh
 git clone https://github.com/domeccleston/routing-sdk.git
 cd routing-sdk
-npm install
+pnpm install
 ```
 
 <div className="planned-feature">
-  <span className="planned-label">Planned · npm installation</span>
+  <span className="planned-label">Planned · pnpm installation</span>
   <p>
     Install versioned packages directly into your application. Registry installation instructions
     will appear here when the first release is available.
@@ -27,7 +27,7 @@ npm install
 
 ## 2. Configure and assign
 
-Create `first-assignment.ts` at the repository root. The example uses illustrative
+Create `examples/round-robin/first-assignment.ts` in its workspace. The example uses illustrative
 booking URLs; replace them with your own before sending visitors to them.
 
 ```ts
@@ -66,7 +66,7 @@ when you add more specific rules.
 ## 3. Run it
 
 ```sh
-npx tsx first-assignment.ts
+pnpm --filter @open-routing/example-round-robin exec tsx first-assignment.ts
 ```
 
 Expected output:

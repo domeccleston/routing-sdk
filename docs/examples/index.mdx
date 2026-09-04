@@ -18,10 +18,10 @@ which routing policies to choose and how to combine them.
 ## Focused, runnable examples
 
 Each directory under `examples/` contains one independent `index.ts` and README.
-After `npm install` at the repository root, run:
+After `pnpm install` at the repository root, run:
 
 ```sh
-npm run start --workspace=@open-routing/example-round-robin
+pnpm --filter @open-routing/example-round-robin run start
 ```
 
 Replace `round-robin` with another example name:
@@ -39,7 +39,7 @@ All except `research` run offline by default. Research requires Docker and model
 credentials and may incur charges; read its README before running it.
 
 The complete form and dashboard live separately in `apps/demo`; start them with
-`npm run dev`.
+`pnpm run dev`.
 
 <div className="planned-feature">
   <span className="planned-label">Planned · Framework recipes</span>

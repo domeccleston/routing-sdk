@@ -398,7 +398,9 @@ describe("durable lead assignment", () => {
     const run = promisify(execFile);
     const outputs = await Promise.all(
       [1, 2, 3].map(() =>
-        run(process.execPath, ["--import", "tsx", "--input-type=module", "-e", code, filename]),
+        run(process.execPath, ["--import", "tsx", "--input-type=module", "-e", code, filename], {
+          cwd: new URL("../", import.meta.url),
+        }),
       ),
     );
     const results = outputs.map(({ stdout }) => JSON.parse(stdout));

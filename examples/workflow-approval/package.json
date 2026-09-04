@@ -7,7 +7,7 @@
     "start": "tsx index.ts"
   },
   "dependencies": {
-    "@open-routing/store-sqlite": "0.0.0",
-    "open-routing": "0.0.0"
+    "@open-routing/store-sqlite": "workspace:*",
+    "open-routing": "workspace:*"
   }
 }
