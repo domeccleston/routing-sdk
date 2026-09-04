@@ -49,6 +49,66 @@ function config(store = open()): RouterConfig<typeof schema> {
   };
 }
 describe("durable lead assignment", () => {
+  it("inspects all pools without changing their cursors or running enrichment", async () => {
+    const options = config();
+    const enrich = vi.fn();
+    const router = createRouter({
+      ...options,
+      providers: { enrichment: { name: "unused", enrich } },
+    });
+    expect(await router.getPoolState("us")).toMatchObject({
+      poolId: "us",
+      lastAssignedPersonId: null,
+      nextPersonId: "a",
+      eligiblePersonIds: ["a", "b"],
+      members: [
+        { id: "a", active: true },
+        { id: "b", active: true },
+        { id: "c", active: false },
+      ],
+    });
+    const before = await router.listPoolStates();
+    expect(await router.listPoolStates()).toEqual(before);
+    expect(enrich).not.toHaveBeenCalled();
+    expect(await options.store.getPoolCursor("us")).toBeNull();
+    await expect(router.getPoolState("missing")).rejects.toThrow("Unknown pool");
+    expect(await createRouter({ ...options, pools: {}, rules: [] }).listPoolStates()).toEqual([]);
+  });
+  it("reports the same next person that assign selects, including changed membership", async () => {
+    const options = config();
+    const router = createRouter(options);
+    const before = await router.getPoolState("us");
+    const first = await router.assign({ country: "US" }, { idempotencyKey: "state-1" });
+    expect(first.personId).toBe(before.nextPersonId);
+    const after = await router.getPoolState("us");
+    expect(after).toMatchObject({ lastAssignedPersonId: "a", nextPersonId: "b" });
+    await router.assign({ country: "US" }, { idempotencyKey: "state-1" });
+    expect(await router.getPoolState("us")).toEqual(after);
+    expect((await router.getPoolState("uk")).lastAssignedPersonId).toBeNull();
+    const changed = createRouter({
+      ...options,
+      people: { ...options.people, a: { ...options.people.a!, active: false } },
+    });
+    expect(await changed.getPoolState("us")).toMatchObject({
+      lastAssignedPersonId: "a",
+      nextPersonId: "b",
+      eligiblePersonIds: ["b"],
+    });
+    expect((await changed.assign({ country: "US" }, { idempotencyKey: "state-2" })).personId).toBe(
+      "b",
+    );
+    const inactive = createRouter({
+      ...options,
+      people: Object.fromEntries(
+        Object.entries(options.people).map(([id, person]) => [id, { ...person, active: false }]),
+      ),
+    });
+    expect(await inactive.getPoolState("us")).toMatchObject({
+      lastAssignedPersonId: "b",
+      nextPersonId: null,
+      eligiblePersonIds: [],
+    });
+  });
   it("rotates in order, skips inactive people, and keeps pools independent", async () => {
     const router = createRouter(config());
     const people = [];
@@ -227,6 +287,7 @@ describe("durable lead assignment", () => {
       ...options,
       store: {
         getAssignment: () => null,
+        getPoolCursor: () => null,
         commitAssignment: () => {
           throw new Error("disk full");
         },
@@ -271,6 +332,10 @@ describe("durable lead assignment", () => {
     );
     first.close();
     const second = createRouter(config(open(filename)));
+    expect(await second.getPoolState("us")).toMatchObject({
+      lastAssignedPersonId: "a",
+      nextPersonId: "b",
+    });
     expect(await second.assign({ country: "US" }, { idempotencyKey: "first" })).toEqual(result);
     expect((await second.assign({ country: "US" }, { idempotencyKey: "second" })).personId).toBe(
       "b",

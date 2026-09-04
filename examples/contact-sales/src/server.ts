@@ -10,9 +10,11 @@ import {
   type DecisionStore,
 } from "@open-routing/core";
 import { sqliteStore } from "@open-routing/store-sqlite";
+import { pdl } from "@open-routing/pdl";
 import { dashboardAsset } from "@open-routing/dashboard";
 import { createContactSalesRouter, contactSalesSchema } from "../router.config.js";
 import { routingCases } from "../fixtures/routing/scenarios.js";
+import reps from "../fixtures/routing/reps.json" with { type: "json" };
 
 const publicDirectory = fileURLToPath(new URL("../public", import.meta.url));
 const port = Number(process.env.PORT ?? 3000);
@@ -27,7 +29,10 @@ const store = sqliteStore(
   process.env.ROUTING_DB_PATH ?? fileURLToPath(new URL("../.data/routing.sqlite", import.meta.url)),
   contactSalesSchema,
 );
-const router = createContactSalesRouter(store);
+const router = createContactSalesRouter(
+  store,
+  process.env.PDL_API_KEY ? pdl({ apiKey: process.env.PDL_API_KEY }) : undefined,
+);
 function persist(write: (store: DecisionStore) => void) {
   try {
     if (store) write(store);
@@ -75,6 +80,31 @@ const server = createServer(async (request, response) => {
       "Content-Security-Policy",
       "default-src 'self'; script-src 'self'; style-src 'self'; frame-ancestors 'none'",
     );
+    if (url.pathname === "/admin/api/analytics") {
+      try {
+        response
+          .writeHead(200, { "Content-Type": "application/json" })
+          .end(JSON.stringify(store.analytics(reps)));
+      } catch {
+        response
+          .writeHead(503, { "Content-Type": "application/json" })
+          .end(JSON.stringify({ error: "storage_unavailable" }));
+      }
+      return;
+    }
+    if (url.pathname === "/admin/api/pools") {
+      try {
+        const pools = await router.listPoolStates();
+        response
+          .writeHead(200, { "Content-Type": "application/json" })
+          .end(JSON.stringify({ pools }));
+      } catch {
+        response
+          .writeHead(503, { "Content-Type": "application/json" })
+          .end(JSON.stringify({ error: "storage_unavailable" }));
+      }
+      return;
+    }
     if (url.pathname === "/admin/api/submissions") {
       try {
         if (!store) throw new Error("Storage unavailable");

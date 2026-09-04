@@ -10,6 +10,7 @@ local example and dashboard.
 packages/
   core/                 Typed schemas, provider contracts, and routing engine
   attio/                Attio CRM ownership provider
+  pdl/                  People Data Labs company enrichment provider
   store-sqlite/         Atomic round-robin state, assignments, and submission records
   dashboard/            Reusable read-only admin UI
 examples/
@@ -53,9 +54,17 @@ root `.env.local` file before running `npm run test:attio`.
 
 ## Local dashboard
 
+For live company enrichment, export `PDL_API_KEY` before running `npm run dev`.
+Without it the example remains fixture-only. See [the PDL adapter](packages/pdl/README.md)
+for configuration, normalized fields, and matching behavior. Default tests never call PDL.
+
 With `npm run dev` running, open <http://localhost:3000/admin>. New form submissions
 are stored in SQLite and shown with their decisions and provider data. See
 [the data model](docs/decision-records.md) for privacy and lifecycle details.
+The [pools view](http://localhost:3000/admin/pools) shows each round-robin's next
+person, last assignment, active rotation order, and inactive members.
+The [analytics view](http://localhost:3000/admin/analytics) summarizes company size,
+industry, HQ country, and rep assignments. Booking confirmations are not tracked yet.
 
 ## Documentation
 

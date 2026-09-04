@@ -23,3 +23,17 @@ Schema v2 adds assignments and pool rotations without modifying existing v1
 submission records. `sqliteDecisionStore` remains an alias for logging-only callers.
 Pass a schema when using submission logging, so privacy filtering retains declared
 non-private fields. Call `close()` when the store is no longer needed.
+
+`store.analytics(people?)` returns a read-only, all-time `AnalyticsSummary` in a
+SQLite read transaction. It covers all records, not the paginated submission list.
+Committed assignments are authoritative; legacy completed submission snapshots
+supplement them. Assignment IDs deduplicate retries and audit copies. Pending/failed
+attempts contribute only to submission counts. Assignment metrics still include
+committed results whose best-effort audit logging failed.
+
+Size/industry/country breakdowns count processed leads, not unique companies.
+Missing enrichment is an explicit Unknown bucket. The company table groups known
+enriched domains and shows one saved profile per domain; unknown domains are excluded.
+Rep metrics distinguish pool and direct assignments; legacy records without a pool
+ID do not have an inferred method. Booking counts are null (not tracked), never zero.
+No booking webhooks, conversion rates, date filters, or new enrichment calls are involved.

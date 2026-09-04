@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Routing — Pools</title>
+    <link rel="stylesheet" href="/admin/dashboard.css" />
+    <script src="/admin/pools.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/admin"
+        ><span class="mark">↗</span> Open Routing <span class="tag">LOCAL</span></a
+      >
+      <a href="/">Open contact form ↗</a>
+    </header>
+    <main>
+      <nav class="admin-tabs" aria-label="Admin">
+        <a href="/admin">Submissions</a><a href="/admin/pools" aria-current="page">Pools</a
+        ><a href="/admin/analytics">Analytics</a>
+      </nav>
+      <div class="pool-heading">
+        <h1>Pools</h1>
+        <button id="refresh">Refresh</button>
+      </div>
+      <p class="pool-note">Next up is a snapshot, not a reservation.</p>
+      <p id="error" role="alert" hidden></p>
+      <p id="loading" role="status">Loading pools…</p>
+      <p id="empty" hidden>No pools configured.</p>
+      <div id="pools" class="pool-grid"></div>
+    </main>
+  </body>
+</html>

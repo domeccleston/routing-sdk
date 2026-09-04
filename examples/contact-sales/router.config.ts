@@ -3,6 +3,7 @@ import {
   defineSchema,
   type RoutingRule,
   type AssignmentStore,
+  type CompanyEnrichmentProvider,
 } from "@open-routing/core";
 
 import repsFixture from "./fixtures/routing/reps.json" with { type: "json" };
@@ -54,11 +55,14 @@ export const contactSalesSchema = defineSchema({
   },
 });
 
-export const createContactSalesRouter = (store: AssignmentStore) =>
+export const createContactSalesRouter = (
+  store: AssignmentStore,
+  enrichment: CompanyEnrichmentProvider = fixtureEnrichment,
+) =>
   createRouter({
     schema: contactSalesSchema,
     providers: {
-      enrichment: fixtureEnrichment,
+      enrichment,
       ownership: fixtureOwnership,
     },
     people: Object.fromEntries(repsFixture.map(({ id, ...person }) => [id, person])),
@@ -66,6 +70,7 @@ export const createContactSalesRouter = (store: AssignmentStore) =>
       territoriesFixture.map((territory) => [
         territory.id,
         {
+          name: territory.name,
           members: territory.repIds,
           strategy: "round-robin" as const,
         },

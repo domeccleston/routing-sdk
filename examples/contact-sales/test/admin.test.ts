@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { SubmissionRecord } from "@open-routing/core";
+import type { SubmissionRecord, PoolState } from "@open-routing/core";
 
 let child: ChildProcess;
 let base: string;
@@ -16,7 +16,12 @@ beforeAll(async () => {
     process.execPath,
     ["--import", "tsx", fileURLToPath(new URL("../src/server.ts", import.meta.url))],
     {
-      env: { ...process.env, PORT: "0", ROUTING_DB_PATH: join(directory, "routing.sqlite") },
+      env: {
+        ...process.env,
+        PDL_API_KEY: "",
+        PORT: "0",
+        ROUTING_DB_PATH: join(directory, "routing.sqlite"),
+      },
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
@@ -60,6 +65,40 @@ const submit = (input: Record<string, string>) =>
   fetch(`${base}/route`, { method: "POST", body: new URLSearchParams(input), redirect: "manual" });
 
 describe("local admin and submission lifecycle", () => {
+  it("serves empty analytics with honest booking metrics and local read-only protection", async () => {
+    const page = await fetch(`${base}/admin/analytics`);
+    expect(page.status).toBe(200);
+    expect(page.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(await page.text()).toContain("Confirmed bookings");
+    expect((await fetch(`${base}/admin/analytics.js`)).status).toBe(200);
+    const response = await fetch(`${base}/admin/api/analytics`);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const summary = await response.json();
+    expect(summary.leads).toBe(0);
+    expect(summary.confirmedBookings).toBeNull();
+    expect(summary.reps).toHaveLength(4);
+    expect((await fetch(`${base}/admin/api/analytics`, { method: "POST" })).status).toBe(403);
+  });
+  it("serves the pools page and read-only state without creating assignments", async () => {
+    const page = await fetch(`${base}/admin/pools`);
+    expect(page.status).toBe(200);
+    expect(page.headers.get("cache-control")).toBe("no-store");
+    expect(page.headers.get("content-security-policy")).toContain("script-src 'self'");
+    expect(await page.text()).toContain("/admin/pools.js");
+    expect((await fetch(`${base}/admin/pools.js`)).status).toBe(200);
+    const response = await fetch(`${base}/admin/api/pools`);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const initial = (await response.json()) as { pools: PoolState[] };
+    expect(initial.pools).toHaveLength(4);
+    expect(initial.pools.find((pool) => pool.poolId === "us-enterprise")).toMatchObject({
+      name: "US Enterprise",
+      lastAssignedPersonId: null,
+      nextPersonId: "rep_amelia",
+    });
+    expect(await fetch(`${base}/admin/api/pools`).then((r) => r.json())).toEqual(initial);
+    expect((await fetch(`${base}/admin/api/pools`, { method: "POST" })).status).toBe(403);
+    expect((await fetch(`${base}/admin/api/submissions`).then((r) => r.json())).total).toBe(0);
+  });
   it("exposes complete demo presets without recording a submission", async () => {
     const before = await fetch(`${base}/admin/api/submissions`).then((r) => r.json());
     const response = await fetch(`${base}/demo-scenarios`);
@@ -138,16 +177,42 @@ describe("local admin and submission lifecycle", () => {
     };
     expect(page.records[0]?.decision?.personId).toBe("rep_marcus");
   });
-  it("rejects foreign host headers on the admin API", async () => {
+  it("updates pool state after assignment and keeps inspection read-only", async () => {
+    const readPools = async () =>
+      (await fetch(`${base}/admin/api/pools`).then((r) => r.json())) as { pools: PoolState[] };
+    const before = (await readPools()).pools.find((pool) => pool.poolId === "us-enterprise")!;
+    expect((await submit({ ...form, workEmail: "buyer@unowned.example" })).status).toBe(303);
+    const after = await readPools();
+    expect(after.pools.find((pool) => pool.poolId === "us-enterprise")?.lastAssignedPersonId).toBe(
+      before.nextPersonId,
+    );
+    expect(await readPools()).toEqual(after);
+  });
+  it("reports company enrichment and rep totals without exposing raw submissions", async () => {
+    const summary = await fetch(`${base}/admin/api/analytics`).then((r) => r.json());
+    expect(summary.leads).toBeGreaterThan(0);
+    expect(summary.enriched).toBeGreaterThan(0);
+    expect(
+      summary.companies.some((company: { domain: string }) => company.domain === "acme.example"),
+    ).toBe(true);
+    expect(summary.reps.some((rep: { assigned: number }) => rep.assigned > 0)).toBe(true);
+    expect(summary.confirmedBookings).toBeNull();
+    expect(JSON.stringify(summary)).not.toContain("secret@acme.example");
+    expect(JSON.stringify(summary)).not.toContain(form.message);
+    expect(await fetch(`${base}/admin/api/analytics`).then((r) => r.json())).toEqual(summary);
+  });
+  it.each([
+    "/admin/api/submissions",
+    "/admin/api/pools",
+    "/admin/pools",
+    "/admin/api/analytics",
+    "/admin/analytics",
+  ])("rejects foreign host headers on %s", async (path) => {
     const status = await new Promise<number | undefined>((resolve, reject) => {
-      get(
-        `${base}/admin/api/submissions`,
-        { headers: { Host: "attacker.example" } },
-        (response) => {
-          response.resume();
-          resolve(response.statusCode);
-        },
-      ).on("error", reject);
+      get(`${base}${path}`, { headers: { Host: "attacker.example" } }, (response) => {
+        response.resume();
+        resolve(response.statusCode);
+      }).on("error", reject);
     });
     expect(status).toBe(403);
   });

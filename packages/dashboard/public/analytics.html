@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Routing — Analytics</title>
+    <link rel="stylesheet" href="/admin/dashboard.css" />
+    <script src="/admin/analytics.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/admin"
+        ><span class="mark">↗</span> Open Routing <span class="tag">LOCAL</span></a
+      ><a href="/">Open contact form ↗</a>
+    </header>
+    <main>
+      <nav class="admin-tabs" aria-label="Admin">
+        <a href="/admin">Submissions</a><a href="/admin/pools">Pools</a
+        ><a href="/admin/analytics" aria-current="page">Analytics</a>
+      </nav>
+      <div class="pool-heading">
+        <h1>Analytics</h1>
+        <button id="refresh">Refresh</button>
+      </div>
+      <p class="pool-note">
+        All time · Lead metrics count each assignment decision once, excluding retries.
+      </p>
+      <p id="error" role="alert" hidden></p>
+      <p id="loading" role="status">Loading analytics…</p>
+      <div id="analytics" hidden>
+        <div class="metrics">
+          <div><span>Leads processed</span><strong id="leads">—</strong></div>
+          <div><span>Assigned leads</span><strong id="assigned">—</strong></div>
+          <div><span>Enriched leads</span><strong id="enriched">—</strong></div>
+          <div><span>Confirmed bookings</span><strong class="untracked">Not tracked</strong></div>
+        </div>
+        <p id="submission-counts" class="pool-note"></p>
+        <p id="empty" hidden>No leads processed yet. Submit the contact form to see analytics.</p>
+        <div class="analytics-charts">
+          <section class="pool-card">
+            <h2>Company size</h2>
+            <p class="pool-note">Enriched employee count</p>
+            <div id="sizes"></div>
+          </section>
+          <section class="pool-card">
+            <h2>Industry / vertical</h2>
+            <p class="pool-note">Provider industry classification</p>
+            <div id="industries"></div>
+          </section>
+          <section class="pool-card">
+            <h2>Country</h2>
+            <p class="pool-note">Company headquarters</p>
+            <div id="countries"></div>
+          </section>
+        </div>
+        <section class="analytics-table pool-card">
+          <h2>Sales reps</h2>
+          <p class="pool-note">
+            Assignments are not bookings. Booking confirmations require booking-event ingestion.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rep</th>
+                  <th>Assigned leads</th>
+                  <th>Share</th>
+                  <th>Round-robin</th>
+                  <th>Direct</th>
+                  <th>Confirmed bookings</th>
+                </tr>
+              </thead>
+              <tbody id="reps"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="analytics-table pool-card">
+          <h2>Companies</h2>
+          <p class="pool-note">
+            Grouped by enriched domain; excludes unknown domains. Profile fields come from saved
+            enrichment.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Company</th>
+                  <th>Employees</th>
+                  <th>Industry</th>
+                  <th>Country</th>
+                  <th>Leads</th>
+                  <th>Assigned</th>
+                </tr>
+              </thead>
+              <tbody id="companies"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

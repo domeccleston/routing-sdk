@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import { sqliteStore } from "@open-routing/store-sqlite";
+import { pdl } from "@open-routing/pdl";
 
 import {
   createRouter,
@@ -18,8 +19,37 @@ beforeEach(() => {
   store = sqliteStore(":memory:", contactSalesSchema);
   router = createContactSalesRouter(store);
 });
-afterEach(() => store.close());
+afterEach(() => {
+  store.close();
+  vi.unstubAllGlobals();
+});
 describe("router contract", () => {
+  it("routes using normalized PDL data and replays without another enrichment request", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            status: 200,
+            id: "acme",
+            likelihood: 9,
+            employee_count: 600,
+            location: { country: "united states" },
+          }),
+        ),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    const liveRouter = createContactSalesRouter(store, pdl({ apiKey: "test" }));
+    const input = { ...routingCases[0]!.input, workEmail: "buyer@unknown.example" };
+    const result = await liveRouter.assign(input, { idempotencyKey: "pdl-lead" });
+    expect(result).toMatchObject({
+      outcome: "assigned",
+      poolId: "us-enterprise",
+      personId: "rep_amelia",
+      facts: { company: { status: "found", company: { country: "US", employeeCount: 600 } } },
+    });
+    expect(await liveRouter.assign(input, { idempotencyKey: "pdl-lead" })).toEqual(result);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it("infers the decide input from the configured form schema", () => {
     type Input = InferInput<typeof contactSalesSchema>;
 

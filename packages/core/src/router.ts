@@ -14,8 +14,27 @@ export interface Person {
   active?: boolean;
 }
 export interface Pool {
+  name?: string;
   members: readonly string[];
   strategy: "round-robin";
+}
+export interface PoolState {
+  poolId: string;
+  name: string;
+  strategy: "round-robin";
+  lastAssignedPersonId: string | null;
+  nextPersonId: string | null;
+  eligiblePersonIds: string[];
+  members: { id: string; name: string; active: boolean }[];
+}
+
+/** Shared by state inspection and atomic store selection. */
+export function nextPoolPerson(
+  memberIds: readonly string[],
+  lastPersonId: string | null,
+): string | null {
+  if (!memberIds.length) return null;
+  return memberIds[(memberIds.indexOf(lastPersonId ?? "") + 1) % memberIds.length]!;
 }
 export type Condition =
   | { all: readonly Condition[] }
@@ -54,6 +73,8 @@ export interface AssignmentRequest {
   candidates?: readonly { id: string; bookingUrl: string }[];
 }
 export interface AssignmentStore {
+  /** Read-only cursor lookup; null means this pool has never assigned a lead. */
+  getPoolCursor(poolId: string): string | null | Promise<string | null>;
   getAssignment(idempotencyKey: string): AssignmentResult | null | Promise<AssignmentResult | null>;
   /** Atomically recheck the key, select a member, advance its pool, and save.
    * Failure MUST roll back all changes; an existing key MUST return its saved result.
@@ -252,6 +273,28 @@ export function createRouter<const Schema extends FormSchema>(config: RouterConf
     }
     return commit({ ...base(), reason: "no_matching_rule" });
   }
-  return { schema: config.schema, parse, assign };
+  async function getPoolState(poolId: string): Promise<PoolState> {
+    const pool = pools.get(poolId);
+    if (!pool) throw new Error(`Unknown pool: ${poolId}`);
+    const lastAssignedPersonId = await config.store.getPoolCursor(poolId);
+    const members = pool.members.map((id) => {
+      const person = people.get(id)!;
+      return { id, name: person.name, active: person.active !== false };
+    });
+    const eligiblePersonIds = members.filter((person) => person.active).map((person) => person.id);
+    return {
+      poolId,
+      name: pool.name ?? poolId,
+      strategy: pool.strategy,
+      lastAssignedPersonId,
+      nextPersonId: nextPoolPerson(eligiblePersonIds, lastAssignedPersonId),
+      eligiblePersonIds,
+      members,
+    };
+  }
+  async function listPoolStates(): Promise<PoolState[]> {
+    return Promise.all([...pools.keys()].map(getPoolState));
+  }
+  return { schema: config.schema, parse, assign, getPoolState, listPoolStates };
 }
 export type Router<Schema extends FormSchema> = ReturnType<typeof createRouter<Schema>>;

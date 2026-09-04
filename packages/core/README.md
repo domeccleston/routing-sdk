@@ -85,3 +85,18 @@ Results include `id`, `outcome` (`assigned`/`unassigned`), `redirectUrl`, option
 and warnings. Raw form inputs are not returned or stored in assignment results;
 private form operands in traces are redacted. Submission logging is a separate
 `DecisionStore` concern; the SQLite adapter implements both contracts.
+
+## Inspecting pools
+
+```ts
+const pool = await router.getPoolState("sales");
+// pool.lastAssignedPersonId, pool.nextPersonId, pool.eligiblePersonIds, pool.members
+const pools = await router.listPoolStates();
+```
+
+These read-only methods combine current configured membership with the store's
+`getPoolCursor(poolId)`. They never run providers or consume a turn. A new pool has
+no last assignment and starts at its first active member. A pool without active
+members has `nextPersonId: null`. Unknown pool IDs throw. Each pool is a snapshot,
+not a reservation or a transactionally consistent snapshot across all pools;
+concurrent assignments can change who is next. Optional pool `name` labels the UI.

@@ -1,8 +1,11 @@
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { readAnalytics, type AnalyticsSummary } from "./analytics.js";
+export type { AnalyticsSummary } from "./analytics.js";
 import {
   redactDecision,
+  nextPoolPerson,
   redactSubmission,
   type DecisionStore,
   type FormSchema,
@@ -16,7 +19,11 @@ import {
 export function sqliteStore(
   filename: string,
   schema: FormSchema = {},
-): DecisionStore & AssignmentStore & { close(): void } {
+): DecisionStore &
+  AssignmentStore & {
+    close(): void;
+    analytics(people?: readonly { id: string; name: string }[]): AnalyticsSummary;
+  } {
   if (filename !== ":memory:") mkdirSync(dirname(filename), { recursive: true, mode: 0o700 });
   const db = new Database(filename);
   db.pragma("busy_timeout = 5000");
@@ -51,19 +58,23 @@ export function sqliteStore(
       .get(key) as { result_json: string } | undefined;
     return row ? (JSON.parse(row.result_json) as AssignmentResult) : null;
   };
+  const getPoolCursor = (poolId: string): string | null => {
+    const row = db
+      .prepare("SELECT last_person_id FROM pool_rotations WHERE pool_id = ?")
+      .get(poolId) as { last_person_id: string } | undefined;
+    return row?.last_person_id ?? null;
+  };
   const commitAssignment = db.transaction((request: AssignmentRequest): AssignmentResult => {
     const existing = getAssignment(request.idempotencyKey);
     if (existing) return existing;
     let result = redactDecision(schema, request.result);
     if (request.candidates?.length) {
       if (!result.poolId) throw new Error("A rotation requires a pool ID");
-      const rotation = db
-        .prepare("SELECT last_person_id FROM pool_rotations WHERE pool_id = ?")
-        .get(result.poolId) as { last_person_id: string } | undefined;
-      const index = request.candidates.findIndex(
-        (person) => person.id === rotation?.last_person_id,
+      const personId = nextPoolPerson(
+        request.candidates.map((person) => person.id),
+        getPoolCursor(result.poolId),
       );
-      const person = request.candidates[(index + 1) % request.candidates.length]!;
+      const person = request.candidates.find((person) => person.id === personId)!;
       const { reason: _reason, ...base } = result;
       result = {
         ...base,
@@ -100,6 +111,10 @@ export function sqliteStore(
     );
   };
   return {
+    analytics(people = []) {
+      return db.transaction(() => readAnalytics(db, people))();
+    },
+    getPoolCursor,
     getAssignment,
     commitAssignment(request) {
       return commitAssignment.immediate(request);
