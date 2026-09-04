@@ -2,7 +2,7 @@
 
 Routes US and UK submissions to separate pools. The sequence US, GB, US, AU assigns Alice, Charlie, Bob, then redirects the unsupported territory to `/success`.
 
-From the repository root, after `pnpm install`:
+From the repository root, after `pnpm install` and `pnpm build`:
 
 ```sh
 pnpm --filter @open-routing/example-territories run start

@@ -1,13 +1,16 @@
 {
   "$schema": "https://unpkg.com/knip/schema.json",
   "workspaces": {
-    ".": { "entry": ["examples/*.test.ts"], "project": ["*.ts", "examples/*.test.ts"] },
+    ".": {
+      "entry": ["examples/*.test.ts", "scripts/*.mjs"],
+      "project": ["*.ts", "examples/*.test.ts", "scripts/*.mjs"]
+    },
     "packages/*": {
-      "entry": ["test/**/*.test.ts"],
+      "entry": ["src/index.ts", "test/**/*.test.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/dashboard": {
-      "entry": ["public/**/*.js"],
+      "entry": ["src/index.ts", "public/**/*.js"],
       "project": ["src/**/*.ts", "public/**/*.js"]
     },
     "examples/*": { "project": ["*.ts"] },

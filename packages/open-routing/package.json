@@ -2,10 +2,25 @@
   "name": "open-routing",
   "version": "0.0.0",
   "private": true,
+  "files": [
+    "dist"
+  ],
   "type": "module",
-  "exports": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
   "dependencies": {
     "@open-routing/core": "workspace:*",
     "@open-routing/store-sqlite": "workspace:*"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

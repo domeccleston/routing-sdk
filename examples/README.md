@@ -2,7 +2,7 @@
 
 Each directory is an independent, single-scenario program. Examples import SDK packages, never each other or the demo application.
 
-Run `pnpm install` at the repository root, then follow an example’s README.
+Run `pnpm install` and `pnpm build` at the repository root, then follow an example’s README.
 
 | Example                                | Scenario                                        | Default services                     |
 | -------------------------------------- | ----------------------------------------------- | ------------------------------------ |

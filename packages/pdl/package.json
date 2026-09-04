@@ -3,19 +3,27 @@
   "version": "0.0.0",
   "private": true,
   "files": [
-    "src"
+    "dist"
   ],
   "type": "module",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "@open-routing/core": "workspace:*",
     "i18n-iso-countries": "^7.14.0",
     "ipaddr.js": "^2.5.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

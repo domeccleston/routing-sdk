@@ -6,7 +6,7 @@ Requires Docker, `OPENROUTER_API_KEY`, and `PARALLEL_API_KEY`. Root `.env.resear
 
 This is a live, paid example, excluded from offline smoke tests. Session artifacts are written to this example’s ignored `.data/research` directory. Ctrl-C cancels the session.
 
-From the repository root, after `pnpm install`:
+From the repository root, after `pnpm install` and `pnpm build`:
 
 ```sh
 pnpm --filter @open-routing/example-research run start

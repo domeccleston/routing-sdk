@@ -2,13 +2,26 @@
   "name": "@open-routing/store-sqlite",
   "version": "0.0.0",
   "private": true,
+  "files": [
+    "dist"
+  ],
   "type": "module",
-  "exports": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "@open-routing/core": "workspace:*",
     "better-sqlite3": "^13.0.3"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

@@ -41,6 +41,7 @@ If using Corepack, run `corepack enable` first.
 
 ```sh
 pnpm install
+pnpm build
 pnpm test
 pnpm run typecheck
 pnpm run dev
@@ -49,6 +50,11 @@ pnpm run dev
 CI uses `pnpm install --frozen-lockfile`. Internal dependencies use `workspace:*`;
 workspace membership and allowed native dependency builds are configured in
 `pnpm-workspace.yaml`. Do not generate an npm lockfile for this repository.
+
+SDK exports point to compiled `dist/` files. `pnpm build` compiles packages in
+dependency order; `pnpm build:watch` rebuilds SDK edits during development.
+`pnpm test:packages` builds and tests the actual tarballs in an isolated consumer.
+See [package builds](docs/package-builds.md). Publication remains disabled.
 
 The example form is served at <http://localhost:3000>. Its POST handler parses
 the strongly typed form, resolves fixture enrichment and CRM ownership, applies
