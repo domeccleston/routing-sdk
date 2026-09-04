@@ -11,9 +11,7 @@ describe("example contact-sales form", () => {
   });
 
   it("has exactly the fields declared by the routing schema", async () => {
-    const formPath = fileURLToPath(
-      new URL("../public/index.html", import.meta.url),
-    );
+    const formPath = fileURLToPath(new URL("../public/index.html", import.meta.url));
     const html = await readFile(formPath, "utf8");
     const formMarkup = html.match(/<form[^>]*>([\s\S]*?)<\/form>/)?.[1] ?? "";
     const formFieldNames = [...formMarkup.matchAll(/\bname="([^"]+)"/g)]
@@ -25,17 +23,13 @@ describe("example contact-sales form", () => {
   });
 
   it("keeps HTML select values aligned with enum schemas", async () => {
-    const formPath = fileURLToPath(
-      new URL("../public/index.html", import.meta.url),
-    );
+    const formPath = fileURLToPath(new URL("../public/index.html", import.meta.url));
     const html = await readFile(formPath, "utf8");
 
     for (const [name, definition] of Object.entries(schema)) {
       if (!("values" in definition)) continue;
 
-      const select = html.match(
-        new RegExp(`<select name="${name}"[^>]*>([\\s\\S]*?)<\\/select>`),
-      );
+      const select = html.match(new RegExp(`<select name="${name}"[^>]*>([\\s\\S]*?)<\\/select>`));
       expect(select, `missing select for ${name}`).not.toBeNull();
 
       const values = [...(select?.[1] ?? "").matchAll(/<option value="([^"]+)"/g)]

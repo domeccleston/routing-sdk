@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip/schema.json",
+  "workspaces": {
+    ".": { "project": ["*.ts"] },
+    "packages/*": {
+      "entry": ["test/**/*.test.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "packages/dashboard": {
+      "entry": ["public/**/*.js"],
+      "project": ["src/**/*.ts", "public/**/*.js"]
+    },
+    "examples/*": {
+      "entry": ["test/**/*.test.ts", "public/**/*.js"],
+      "project": [
+        "router.config.ts",
+        "src/**/*.ts",
+        "test/**/*.ts",
+        "fixtures/**/*.ts",
+        "public/**/*.js"
+      ]
+    }
+  }
+}

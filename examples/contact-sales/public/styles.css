@@ -5,9 +5,13 @@
   font-synthesis: none;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-body { margin: 0; }
+body {
+  margin: 0;
+}
 
 main {
   width: min(100% - 40px, 920px);
@@ -18,17 +22,50 @@ main {
   gap: 72px;
 }
 
-.intro { padding-top: 28px; }
+.intro {
+  padding-top: 28px;
+}
 
-.presets { margin-top: 36px; padding-top: 24px; border-top: 1px solid #d9dace; }
-.presets h2 { font-size: 17px; margin: 0 0 10px; }
-.presets p { color: #58625c; font-size: 13px; line-height: 1.6; }
-.presets label { margin: 20px 0 8px; }
-.presets select { font-size: 13px; }
-.presets button { width: auto; background: transparent; color: #315f43; border: 1px solid #b9c5b8; padding: 9px 14px; font-size: 12px; }
-.presets button:hover { background: #e6ebe1; }
-.presets a { display: block; margin-top: 20px; color: #315f43; font-size: 13px; }
-#scenario-summary { min-height: 42px; }
+.presets {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid #d9dace;
+}
+.presets h2 {
+  font-size: 17px;
+  margin: 0 0 10px;
+}
+.presets p {
+  color: #58625c;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.presets label {
+  margin: 20px 0 8px;
+}
+.presets select {
+  font-size: 13px;
+}
+.presets button {
+  width: auto;
+  background: transparent;
+  color: #315f43;
+  border: 1px solid #b9c5b8;
+  padding: 9px 14px;
+  font-size: 12px;
+}
+.presets button:hover {
+  background: #e6ebe1;
+}
+.presets a {
+  display: block;
+  margin-top: 20px;
+  color: #315f43;
+  font-size: 13px;
+}
+#scenario-summary {
+  min-height: 42px;
+}
 
 .eyebrow {
   margin: 0 0 16px;
@@ -72,7 +109,10 @@ label {
   font-weight: 650;
 }
 
-small { color: #7a837d; font-weight: 400; }
+small {
+  color: #7a837d;
+  font-weight: 400;
+}
 
 .row {
   display: grid;
@@ -80,7 +120,9 @@ small { color: #7a837d; font-weight: 400; }
   gap: 16px;
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
   width: 100%;
   border: 1px solid #d4d3cb;
   border-radius: 10px;
@@ -91,7 +133,9 @@ input, select, textarea {
   padding: 12px 13px;
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
   border-color: #427055;
   outline: 3px solid rgb(66 112 85 / 12%);
 }
@@ -108,7 +152,9 @@ button {
   padding: 14px 18px;
 }
 
-button:hover { background: #2f4538; }
+button:hover {
+  background: #2f4538;
+}
 
 .result {
   min-height: 100vh;
@@ -118,7 +164,10 @@ button:hover { background: #2f4538; }
   justify-content: center;
 }
 
-.result a { color: #315f43; margin-top: 28px; }
+.result a {
+  color: #315f43;
+  margin-top: 28px;
+}
 
 .result .booking-link {
   align-self: flex-start;
@@ -131,7 +180,16 @@ button:hover { background: #2f4538; }
 }
 
 @media (max-width: 720px) {
-  main { grid-template-columns: 1fr; gap: 36px; padding: 40px 0; }
-  .row { grid-template-columns: 1fr; gap: 0; }
-  form { padding: 24px; }
+  main {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding: 40px 0;
+  }
+  .row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  form {
+    padding: 24px;
+  }
 }

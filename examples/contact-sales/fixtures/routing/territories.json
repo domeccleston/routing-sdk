@@ -4,7 +4,7 @@
     "name": "US Enterprise",
     "countries": ["US"],
     "minimumEmployees": 500,
-    "repIds": ["rep_amelia"]
+    "repIds": ["rep_amelia", "rep_marcus"]
   },
   {
     "id": "us-commercial",
@@ -28,4 +28,3 @@
     "repIds": ["rep_luca"]
   }
 ]
-

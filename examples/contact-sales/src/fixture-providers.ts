@@ -1,7 +1,4 @@
-import type {
-  CompanyEnrichmentProvider,
-  CrmOwnershipProvider,
-} from "@open-routing/core";
+import type { CompanyEnrichmentProvider, CrmOwnershipProvider } from "@open-routing/core";
 
 import companiesFixture from "../fixtures/attio/companies.json" with { type: "json" };
 import enrichmentFixture from "../fixtures/attio/company-enrichment.json" with { type: "json" };
@@ -57,4 +54,3 @@ export const fixtureOwnership: CrmOwnershipProvider = {
     };
   },
 };
-

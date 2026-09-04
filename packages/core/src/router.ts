@@ -1,275 +1,257 @@
 import { randomUUID } from "node:crypto";
-
 import type {
   CompanyEnrichmentProvider,
   CompanyEnrichmentResult,
   CrmOwnershipProvider,
   OwnershipResult,
 } from "./providers.js";
-import {
-  parseSubmission,
-  type FormSchema,
-  type InferInput,
-  type ParseOptions,
-} from "./schema.js";
+import { parseSubmission, type FormSchema, type InferInput, type ParseOptions } from "./schema.js";
+import { redactDecision } from "./decision-record.js";
 
-export interface SalesRep {
-  id: string;
+export interface Person {
   name: string;
-  email: string;
-  active: boolean;
   bookingUrl: string;
+  active?: boolean;
 }
-
-export interface Territory {
-  id: string;
-  name: string;
-  countries: readonly string[];
-  minimumEmployees?: number;
-  maximumEmployees?: number;
-  repIds: readonly string[];
+export interface Pool {
+  members: readonly string[];
+  strategy: "round-robin";
 }
-
-export interface RuleCondition {
-  field: string;
-  operator: "equals" | "not_equals" | "in";
-  value: unknown;
-}
-
-export type RuleOutcome =
-  | { type: "not_routed"; reason: string }
-  | { type: "owner"; valueFrom: string }
-  | { type: "territory" }
-  | { type: "unresolved"; reason: string };
-
-export interface RoutingRule {
-  id: string;
-  priority: number;
-  when: RuleCondition;
-  outcome: RuleOutcome;
-}
-
+export type Condition =
+  | { all: readonly Condition[] }
+  | { any: readonly Condition[] }
+  | { field: string; equals: unknown }
+  | { field: string; notEquals: unknown }
+  | { field: string; in: readonly unknown[] }
+  | { field: string; gte: number }
+  | { field: string; lte: number };
+export type RoutingRule = { id: string; when: Condition } & (
+  | { assign: { pool: string } | { person: string } | { owner: true }; redirect?: never }
+  | { redirect: string; reason?: string; assign?: never }
+);
 export interface RuleTrace {
   rule: string;
   matched: boolean;
-  condition: RuleCondition;
+  condition: { field: string; operator: string; value: unknown };
   actual: unknown;
 }
-
-export interface RoutedDecision<Input> {
+export interface AssignmentResult {
   id: string;
-  outcome: "routed";
-  route: string;
-  input: Input;
-  target: {
-    type: "booking";
-    provider: "cal.com";
-    repId: string;
-    repName: string;
-    url: string;
-  };
-  facts: DecisionFacts;
+  outcome: "assigned" | "unassigned";
+  ruleId?: string;
+  poolId?: string;
+  personId?: string;
+  redirectUrl: string;
+  reason?: string;
+  facts: { company?: CompanyEnrichmentResult; ownership?: OwnershipResult };
   trace: RuleTrace[];
   warnings: string[];
 }
-
-export interface UnroutedDecision<Input> {
-  id: string;
-  outcome: "not_routed" | "unresolved";
-  route: string;
-  reason: string;
-  input: Input;
-  target: { type: "success"; url: string };
-  facts: DecisionFacts;
-  trace: RuleTrace[];
-  warnings: string[];
+export interface AssignmentRequest {
+  idempotencyKey: string;
+  result: AssignmentResult;
+  /** Ordered eligible members captured from this router's configuration. */
+  candidates?: readonly { id: string; bookingUrl: string }[];
 }
-
-export type RoutingDecision<Input> = RoutedDecision<Input> | UnroutedDecision<Input>;
-
-export interface DecisionFacts {
-  company: CompanyEnrichmentResult;
-  ownership: OwnershipResult;
+export interface AssignmentStore {
+  getAssignment(idempotencyKey: string): AssignmentResult | null | Promise<AssignmentResult | null>;
+  /** Atomically recheck the key, select a member, advance its pool, and save.
+   * Failure MUST roll back all changes; an existing key MUST return its saved result.
+   */
+  commitAssignment(request: AssignmentRequest): AssignmentResult | Promise<AssignmentResult>;
 }
-
 export interface RouterConfig<Schema extends FormSchema> {
   schema: Schema;
-  providers: {
-    enrichment: CompanyEnrichmentProvider;
-    ownership: CrmOwnershipProvider;
-  };
-  reps: readonly SalesRep[];
-  territories: readonly Territory[];
+  people: Readonly<Record<string, Person>>;
+  pools: Readonly<Record<string, Pool>>;
   rules: readonly RoutingRule[];
-  successUrl: string;
+  fallback: { redirect: string };
+  store: AssignmentStore;
+  providers?: { enrichment?: CompanyEnrichmentProvider; ownership?: CrmOwnershipProvider };
 }
-
 function readPath(root: unknown, path: string): unknown {
-  return path.split(".").reduce<unknown>((value, key) => {
-    if (typeof value !== "object" || value === null) return undefined;
-    return (value as Record<string, unknown>)[key];
-  }, root);
+  return path
+    .split(".")
+    .reduce<unknown>(
+      (value, key) =>
+        typeof value === "object" && value !== null && Object.hasOwn(value, key)
+          ? (value as Record<string, unknown>)[key]
+          : undefined,
+      root,
+    );
 }
-
-function matches(condition: RuleCondition, actual: unknown): boolean {
-  if (condition.operator === "equals") return actual === condition.value;
-  if (condition.operator === "not_equals") return actual !== condition.value;
-  return Array.isArray(condition.value) && condition.value.includes(actual);
+function evaluate(
+  condition: Condition,
+  context: unknown,
+  rule: string,
+  trace: RuleTrace[],
+): boolean {
+  if ("all" in condition)
+    return condition.all.map((c) => evaluate(c, context, rule, trace)).every(Boolean);
+  if ("any" in condition)
+    return condition.any.map((c) => evaluate(c, context, rule, trace)).some(Boolean);
+  const actual = readPath(context, condition.field);
+  const operator =
+    "equals" in condition
+      ? "equals"
+      : "notEquals" in condition
+        ? "notEquals"
+        : "in" in condition
+          ? "in"
+          : "gte" in condition
+            ? "gte"
+            : "lte";
+  const value: unknown =
+    "equals" in condition
+      ? condition.equals
+      : "notEquals" in condition
+        ? condition.notEquals
+        : "in" in condition
+          ? condition.in
+          : "gte" in condition
+            ? condition.gte
+            : condition.lte;
+  const matched =
+    "equals" in condition
+      ? actual === condition.equals
+      : "notEquals" in condition
+        ? actual !== undefined && actual !== condition.notEquals
+        : "in" in condition
+          ? condition.in.includes(actual)
+          : typeof actual === "number" &&
+            ("gte" in condition ? actual >= condition.gte : actual <= condition.lte);
+  trace.push({ rule, matched, condition: { field: condition.field, operator, value }, actual });
+  return matched;
 }
-
-function domainFromEmail(email: string): string | undefined {
-  const [, domain] = email.trim().toLowerCase().split("@");
-  return domain || undefined;
+function validateUrl(value: string, relative = false) {
+  if (relative && /^\/(?!\/)/.test(value) && !/[\\\s]/.test(value)) return;
+  const url = new URL(value);
+  if (url.protocol !== "https:" || url.username || url.password)
+    throw new Error("Destinations must be HTTPS URLs or local absolute paths");
 }
-
-function findRoleValue(
-  schema: FormSchema,
-  input: Record<string, unknown>,
-  role: "person.email" | "company.name" | "company.domain",
-): string | undefined {
-  const entry = Object.entries(schema).find(([, definition]) => definition.role === role);
-  const value = entry ? input[entry[0]] : undefined;
-  return typeof value === "string" && value ? value : undefined;
-}
-
-function territoryMatches(territory: Territory, country: string, employeeCount: number): boolean {
-  if (!territory.countries.includes(country.toUpperCase())) return false;
-  if (territory.minimumEmployees !== undefined && employeeCount < territory.minimumEmployees) {
-    return false;
-  }
-  if (territory.maximumEmployees !== undefined && employeeCount > territory.maximumEmployees) {
-    return false;
-  }
-  return true;
-}
-
 export function createRouter<const Schema extends FormSchema>(config: RouterConfig<Schema>) {
-  type Input = InferInput<Schema>;
-
-  const reps = new Map(config.reps.filter(({ active }) => active).map((rep) => [rep.id, rep]));
-  const rules = [...config.rules].sort((left, right) => right.priority - left.priority);
-
-  function parse(rawInput: unknown, options?: ParseOptions): Input {
+  const people = new Map(Object.entries(config.people).map(([id, person]) => [id, { ...person }]));
+  const pools = new Map(
+    Object.entries(config.pools).map(([id, pool]) => [id, { ...pool, members: [...pool.members] }]),
+  );
+  const rules = structuredClone(config.rules);
+  for (const person of people.values()) validateUrl(person.bookingUrl);
+  validateUrl(config.fallback.redirect, true);
+  for (const pool of pools.values()) {
+    if (
+      pool.strategy !== "round-robin" ||
+      !pool.members.length ||
+      new Set(pool.members).size !== pool.members.length
+    )
+      throw new Error("Pools require unique members and a round-robin strategy");
+    for (const id of pool.members) if (!people.has(id)) throw new Error(`Unknown person: ${id}`);
+  }
+  if (new Set(rules.map((r) => r.id)).size !== rules.length)
+    throw new Error("Rule IDs must be unique");
+  for (const rule of rules) {
+    if (rule.redirect !== undefined) validateUrl(rule.redirect, true);
+    if (rule.assign && "pool" in rule.assign && !pools.has(rule.assign.pool))
+      throw new Error(`Unknown pool: ${rule.assign.pool}`);
+    if (rule.assign && "person" in rule.assign && !people.has(rule.assign.person))
+      throw new Error(`Unknown person: ${rule.assign.person}`);
+  }
+  function parse(rawInput: unknown, options?: ParseOptions): InferInput<Schema> {
     return parseSubmission(config.schema, rawInput, options);
   }
-
-  async function decide(rawInput: Input): Promise<RoutingDecision<Input>> {
-    const input = parseSubmission(config.schema, rawInput);
-    const inputRecord = input as Record<string, unknown>;
-    const email = findRoleValue(config.schema, inputRecord, "person.email");
-    const explicitDomain = findRoleValue(config.schema, inputRecord, "company.domain");
-    const domain = explicitDomain ?? (email ? domainFromEmail(email) : undefined);
-
-    if (!domain) {
-      throw new Error("The schema must provide company.domain or person.email");
-    }
-
-    const companyName = findRoleValue(config.schema, inputRecord, "company.name");
-    const lookup = companyName ? { domain, name: companyName } : { domain };
+  async function assign(
+    rawInput: InferInput<Schema>,
+    { idempotencyKey }: { idempotencyKey: string },
+  ): Promise<AssignmentResult> {
+    if (!idempotencyKey?.trim() || idempotencyKey.length > 200)
+      throw new Error("A nonempty idempotency key of at most 200 characters is required");
+    const previous = await config.store.getAssignment(idempotencyKey);
+    if (previous) return previous;
+    const input = parse(rawInput);
+    const role = (name: string) => {
+      const entry = Object.entries(config.schema).find(([, field]) => field.role === name);
+      const value = entry ? (input as Record<string, unknown>)[entry[0]] : undefined;
+      return typeof value === "string" ? value : undefined;
+    };
+    const domain = role("company.domain") ?? role("person.email")?.split("@")[1];
+    if (config.providers && Object.values(config.providers).some(Boolean) && !domain)
+      throw new Error("Providers require a company.domain or person.email field");
+    const lookup = {
+      domain: domain?.trim().toLowerCase() ?? "",
+      ...(role("company.name") ? { name: role("company.name")! } : {}),
+    };
     const [company, ownership] = await Promise.all([
-      config.providers.enrichment.enrich(lookup),
-      config.providers.ownership.findOwner(lookup),
+      config.providers?.enrichment?.enrich(lookup),
+      config.providers?.ownership?.findOwner(lookup),
     ]);
-
-    const facts: DecisionFacts = { company, ownership };
+    const facts = { ...(company ? { company } : {}), ...(ownership ? { ownership } : {}) };
     const context = {
       input,
-      company,
+      company:
+        company?.status === "found" ? { ...company.company, status: company.status } : company,
       crm: { owner: ownership },
     };
     const trace: RuleTrace[] = [];
     const warnings: string[] = [];
-
-    if (company.status === "unavailable") warnings.push(`enrichment:${company.reason}`);
-    if (ownership.status === "unavailable") warnings.push(`crm:${ownership.reason}`);
-
-    for (const rule of rules) {
-      const actual = readPath(context, rule.when.field);
-      const matched = matches(rule.when, actual);
-      trace.push({ rule: rule.id, matched, condition: rule.when, actual });
-      if (!matched) continue;
-
-      if (rule.outcome.type === "not_routed" || rule.outcome.type === "unresolved") {
-        return {
-          id: randomUUID(),
-          outcome: rule.outcome.type === "not_routed" ? "not_routed" : "unresolved",
-          route: rule.id,
-          reason: rule.outcome.reason,
-          input,
-          target: { type: "success", url: config.successUrl },
-          facts,
-          trace,
-          warnings,
-        };
-      }
-
-      if (rule.outcome.type === "owner" && ownership.status === "owned") {
-        const rep = reps.get(ownership.owner.id);
-        if (!rep) {
-          warnings.push(`crm_owner_not_configured:${ownership.owner.id}`);
-          continue;
-        }
-        return {
-          id: randomUUID(),
-          outcome: "routed",
-          route: rule.id,
-          input,
-          target: {
-            type: "booking",
-            provider: "cal.com",
-            repId: rep.id,
-            repName: rep.name,
-            url: rep.bookingUrl,
-          },
-          facts,
-          trace,
-          warnings,
-        };
-      }
-
-      if (rule.outcome.type === "territory" && company.status === "found") {
-        const { country, employeeCount } = company.company;
-        if (!country || employeeCount === undefined) continue;
-        const territory = config.territories.find((candidate) =>
-          territoryMatches(candidate, country, employeeCount),
-        );
-        const rep = territory?.repIds.map((id) => reps.get(id)).find(Boolean);
-        if (!territory || !rep) continue;
-
-        return {
-          id: randomUUID(),
-          outcome: "routed",
-          route: territory.id,
-          input,
-          target: {
-            type: "booking",
-            provider: "cal.com",
-            repId: rep.id,
-            repName: rep.name,
-            url: rep.bookingUrl,
-          },
-          facts,
-          trace,
-          warnings,
-        };
-      }
-    }
-
-    return {
+    if (company?.status === "unavailable") warnings.push(`enrichment:${company.reason}`);
+    if (ownership?.status === "unavailable") warnings.push(`crm:${ownership.reason}`);
+    const base = (): AssignmentResult => ({
       id: randomUUID(),
-      outcome: "unresolved",
-      route: "no-match",
-      reason: "no_route_matched",
-      input,
-      target: { type: "success", url: config.successUrl },
+      outcome: "unassigned",
+      redirectUrl: config.fallback.redirect,
       facts,
       trace,
       warnings,
-    };
+    });
+    const commit = (result: AssignmentResult, candidates?: AssignmentRequest["candidates"]) =>
+      config.store.commitAssignment({
+        idempotencyKey,
+        result: redactDecision(config.schema, result),
+        ...(candidates ? { candidates } : {}),
+      });
+    for (const rule of rules) {
+      if (!evaluate(rule.when, context, rule.id, trace)) continue;
+      const result = { ...base(), ruleId: rule.id };
+      if (rule.redirect !== undefined)
+        return commit({
+          ...result,
+          redirectUrl: rule.redirect,
+          reason: rule.reason ?? "rule_redirect",
+        });
+      const assignment = rule.assign!;
+      if ("pool" in assignment) {
+        const candidates = pools.get(assignment.pool)!.members.flatMap((id) => {
+          const person = people.get(id)!;
+          return person.active === false ? [] : [{ id, bookingUrl: person.bookingUrl }];
+        });
+        return commit(
+          { ...result, poolId: assignment.pool, reason: "no_active_members" },
+          candidates,
+        );
+      }
+      const personId =
+        "person" in assignment
+          ? assignment.person
+          : ownership?.status === "owned"
+            ? ownership.owner.id
+            : undefined;
+      const person = personId ? people.get(personId) : undefined;
+      if (!person || person.active === false) {
+        // An unavailable CRM owner explicitly falls through to territory rules.
+        if ("owner" in assignment) {
+          warnings.push("crm_owner_not_eligible");
+          continue;
+        }
+        return commit({ ...result, reason: "person_inactive" });
+      }
+      return commit({
+        ...result,
+        outcome: "assigned",
+        personId: personId!,
+        redirectUrl: person.bookingUrl,
+      });
+    }
+    return commit({ ...base(), reason: "no_matching_rule" });
   }
-
-  return { schema: config.schema, parse, decide };
+  return { schema: config.schema, parse, assign };
 }
-
 export type Router<Schema extends FormSchema> = ReturnType<typeof createRouter<Schema>>;
-

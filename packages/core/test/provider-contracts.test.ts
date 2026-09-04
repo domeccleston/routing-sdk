@@ -11,4 +11,3 @@ describe("CRM ownership provider contract", () => {
   it.todo("distinguishes an unowned company from a missing company");
   it.todo("returns unavailable with a typed reason when the provider fails");
 });
-

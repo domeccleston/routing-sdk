@@ -2,10 +2,10 @@
   "name": "@open-routing/attio",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
   "files": [
     "src"
   ],
+  "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -17,4 +17,3 @@
     "@open-routing/core": "0.0.0"
   }
 }
-

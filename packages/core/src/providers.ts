@@ -49,4 +49,3 @@ export interface CrmOwnershipProvider {
   readonly name: string;
   findOwner(lookup: CompanyLookup): Promise<OwnershipResult>;
 }
-

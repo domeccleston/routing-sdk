@@ -17,14 +17,13 @@ export type FieldDefinition =
 
 export type FormSchema = Record<string, FieldDefinition>;
 
-type FieldValue<Field extends FieldDefinition> =
-  Field extends { type: "integer" }
-    ? number
-    : Field extends { type: "boolean" }
-      ? boolean
-      : Field extends { type: "enum"; values: readonly (infer Value extends string)[] }
-        ? Value
-        : string;
+type FieldValue<Field extends FieldDefinition> = Field extends { type: "integer" }
+  ? number
+  : Field extends { type: "boolean" }
+    ? boolean
+    : Field extends { type: "enum"; values: readonly (infer Value extends string)[] }
+      ? Value
+      : string;
 
 type RequiredKeys<Schema extends FormSchema> = {
   [Key in keyof Schema]: Schema[Key] extends { required: true } ? Key : never;
@@ -69,9 +68,7 @@ function parseField(
   options: ParseOptions,
 ): { value?: unknown; issue?: ValidationIssue } {
   if (rawValue === undefined || rawValue === null || rawValue === "") {
-    return definition.required
-      ? { issue: { field, message: "is required" } }
-      : {};
+    return definition.required ? { issue: { field, message: "is required" } } : {};
   }
 
   let value = rawValue;
@@ -144,4 +141,3 @@ export function parseSubmission<Schema extends FormSchema>(
   if (issues.length > 0) throw new SubmissionValidationError(issues);
   return parsed as InferInput<Schema>;
 }
-

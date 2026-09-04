@@ -1,8 +1,4 @@
-import type {
-  CompanyLookup,
-  CrmOwnershipProvider,
-  OwnershipResult,
-} from "@open-routing/core";
+import type { CompanyLookup, CrmOwnershipProvider, OwnershipResult } from "@open-routing/core";
 
 export interface AttioOptions {
   apiKey: string;
@@ -105,4 +101,3 @@ export function attio(options: AttioOptions): CrmOwnershipProvider {
     },
   };
 }
-

@@ -1,4 +1,6 @@
-import { describe, expect, expectTypeOf, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
+import { randomUUID } from "node:crypto";
+import { sqliteStore } from "@open-routing/store-sqlite";
 
 import {
   createRouter,
@@ -7,12 +9,16 @@ import {
   type InferInput,
   SubmissionValidationError,
 } from "@open-routing/core";
-import {
-  contactSalesSchema,
-  router,
-} from "../router.config.js";
+import { contactSalesSchema, createContactSalesRouter } from "../router.config.js";
 import { routingCases } from "../fixtures/routing/scenarios.js";
 
+let store: ReturnType<typeof sqliteStore>;
+let router: ReturnType<typeof createContactSalesRouter>;
+beforeEach(() => {
+  store = sqliteStore(":memory:", contactSalesSchema);
+  router = createContactSalesRouter(store);
+});
+afterEach(() => store.close());
 describe("router contract", () => {
   it("infers the decide input from the configured form schema", () => {
     type Input = InferInput<typeof contactSalesSchema>;
@@ -40,29 +46,32 @@ describe("router contract", () => {
     const invalidRouter = createRouter({
       schema: contactSalesSchema,
       providers: { enrichment, ownership },
-      reps: [],
-      territories: [],
+      people: {},
+      pools: {},
+      store,
       rules: [],
-      successUrl: "/success.html",
+      fallback: { redirect: "/success.html" },
     });
 
     await expect(
-      invalidRouter.decide({ workEmail: "not-an-email" } as never),
+      invalidRouter.assign({ workEmail: "not-an-email" } as never, {
+        idempotencyKey: randomUUID(),
+      }),
     ).rejects.toBeInstanceOf(SubmissionValidationError);
     expect(enrichment.enrich).not.toHaveBeenCalled();
     expect(ownership.findOwner).not.toHaveBeenCalled();
   });
 
   it.each(routingCases)("$name", async ({ input, expected }) => {
-    const decision = await router.decide(input);
+    const decision = await router.assign(input, { idempotencyKey: randomUUID() });
 
     expect(decision.outcome).toBe(expected.outcome);
-    expect(decision.route).toBe(expected.route);
+    expect(decision.ruleId).toBe(expected.route);
     if (expected.repId) {
-      expect(decision.outcome).toBe("routed");
-      if (decision.outcome === "routed") {
-        expect(decision.target.repId).toBe(expected.repId);
-        expect(decision.target.url).toBe("https://cal.com/dom-eccleston/30min");
+      expect(decision.outcome).toBe("assigned");
+      if (decision.outcome === "assigned") {
+        expect(decision.personId).toBe(expected.repId);
+        expect(decision.redirectUrl).toBe("https://cal.com/dom-eccleston/30min");
       }
     }
   });
@@ -84,21 +93,21 @@ describe("router contract", () => {
           },
         },
       },
-      reps: [],
-      territories: [],
+      people: {},
+      pools: {},
+      store,
       rules: [
         {
           id: "unresolved-company",
-          priority: 1,
           when: {
             field: "company.status",
-            operator: "in",
-            value: ["not_found", "unavailable"],
+            in: ["not_found", "unavailable"],
           },
-          outcome: { type: "unresolved", reason: "company_data_unavailable" },
+          redirect: "/success.html",
+          reason: "company_data_unavailable",
         },
       ],
-      successUrl: "/success.html",
+      fallback: { redirect: "/success.html" },
     });
 
     const input = router.parse({
@@ -109,14 +118,14 @@ describe("router contract", () => {
       requestedSeats: 5,
       requestType: "sales",
     });
-    const decision = await unavailableRouter.decide(input);
+    const decision = await unavailableRouter.assign(input, { idempotencyKey: randomUUID() });
 
     expect(decision.facts.company).toEqual({ status: "unavailable", reason: "timeout" });
     expect(decision.warnings).toContain("enrichment:timeout");
   });
 
   it("returns a serializable explanation for every decision", async () => {
-    const decision = await router.decide(routingCases[0]!.input);
+    const decision = await router.assign(routingCases[0]!.input, { idempotencyKey: randomUUID() });
     const serialized = JSON.parse(JSON.stringify(decision)) as typeof decision;
 
     expect(serialized.id).toBeTruthy();

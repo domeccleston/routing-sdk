@@ -10,7 +10,7 @@ export interface RoutingCase {
     message?: string;
   };
   expected: {
-    outcome: "routed" | "not_routed" | "unresolved";
+    outcome: "assigned" | "unassigned";
     route: string;
     repId?: string;
   };
@@ -28,7 +28,7 @@ export const routingCases: RoutingCase[] = [
       requestType: "sales",
     },
     expected: {
-      outcome: "routed",
+      outcome: "assigned",
       route: "existing-crm-owner",
       repId: "rep_marcus",
     },
@@ -44,7 +44,7 @@ export const routingCases: RoutingCase[] = [
       requestType: "sales",
     },
     expected: {
-      outcome: "routed",
+      outcome: "assigned",
       route: "us-enterprise",
       repId: "rep_amelia",
     },
@@ -60,7 +60,7 @@ export const routingCases: RoutingCase[] = [
       requestType: "sales",
     },
     expected: {
-      outcome: "routed",
+      outcome: "assigned",
       route: "us-enterprise",
       repId: "rep_amelia",
     },
@@ -76,7 +76,7 @@ export const routingCases: RoutingCase[] = [
       requestType: "sales",
     },
     expected: {
-      outcome: "routed",
+      outcome: "assigned",
       route: "emea-commercial",
       repId: "rep_luca",
     },
@@ -93,7 +93,7 @@ export const routingCases: RoutingCase[] = [
       message: "I cannot sign in",
     },
     expected: {
-      outcome: "not_routed",
+      outcome: "unassigned",
       route: "non-sales-request",
     },
   },
@@ -108,9 +108,8 @@ export const routingCases: RoutingCase[] = [
       requestType: "sales",
     },
     expected: {
-      outcome: "unresolved",
+      outcome: "unassigned",
       route: "unresolved-company",
     },
   },
 ];
-

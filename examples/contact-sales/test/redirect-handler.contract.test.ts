@@ -8,4 +8,3 @@ describe("redirect handler contract", () => {
   it.todo("persists the decision before returning the redirect");
   it.todo("fails open when decision persistence is unavailable");
 });
-

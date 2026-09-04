@@ -1,5 +1,5 @@
 import type { FormSchema } from "./schema.js";
-import type { RoutingDecision } from "./router.js";
+import type { AssignmentResult } from "./router.js";
 
 export interface SubmissionRecord {
   id: string;
@@ -9,20 +9,26 @@ export interface SubmissionRecord {
   status: "pending" | "completed" | "failed";
   configVersion: string;
   input: Record<string, unknown>;
-  decision: Omit<RoutingDecision<unknown>, "input"> | null;
+  decision: AssignmentResult | null;
   error: { code: string; fields?: string[] } | null;
 }
 
 export interface DecisionStore {
   create(record: SubmissionRecord): void;
-  complete(id: string, decision: RoutingDecision<unknown>, durationMs: number): void;
+  complete(id: string, decision: AssignmentResult, durationMs: number): void;
   fail(id: string, error: NonNullable<SubmissionRecord["error"]>, durationMs: number): void;
   get(id: string): SubmissionRecord | null;
-  list(options?: { status?: string; limit?: number; offset?: number }): { records: SubmissionRecord[]; total: number };
+  list(options?: { status?: string; limit?: number; offset?: number }): {
+    records: SubmissionRecord[];
+    total: number;
+  };
 }
 
 /** Persist only declared fields; never stringify arbitrary input or provider errors. */
-export function redactSubmission(schema: FormSchema, input: Record<string, unknown>): Record<string, unknown> {
+export function redactSubmission(
+  schema: FormSchema,
+  input: Record<string, unknown>,
+): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, field] of Object.entries(schema)) {
     const value = input[key];
@@ -36,14 +42,18 @@ export function redactSubmission(schema: FormSchema, input: Record<string, unkno
   return result;
 }
 
-export function redactDecision(schema: FormSchema, decision: RoutingDecision<unknown>): Omit<RoutingDecision<unknown>, "input"> {
-  const { input: _input, ...snapshot } = decision;
+export function redactDecision(schema: FormSchema, decision: AssignmentResult): AssignmentResult {
+  const snapshot = decision;
   return {
     ...snapshot,
     trace: snapshot.trace.map((step) => {
       const field = step.condition.field.startsWith("input.")
-        ? schema[step.condition.field.slice(6)] : undefined;
-      return field && (field.privacy === "omit" || field.privacy === "mask" || (field.type === "email" && field.privacy !== "plain"))
+        ? schema[step.condition.field.slice(6)]
+        : undefined;
+      return field &&
+        (field.privacy === "omit" ||
+          field.privacy === "mask" ||
+          (field.type === "email" && field.privacy !== "plain"))
         ? { ...step, actual: "[redacted]", condition: { ...step.condition, value: "[redacted]" } }
         : step;
     }),

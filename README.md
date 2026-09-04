@@ -1,8 +1,8 @@
 # Open Routing
 
 An open-source routing engine for contact-sales forms. This repository is at
-the contract-design stage: the example data and tests define the first problem
-the SDK will solve.
+an early implementation stage, with durable round-robin lead assignment and a
+local example and dashboard.
 
 ## Repository structure
 
@@ -10,7 +10,7 @@ the SDK will solve.
 packages/
   core/                 Typed schemas, provider contracts, and routing engine
   attio/                Attio CRM ownership provider
-  store-sqlite/         Durable local submission and decision records
+  store-sqlite/         Atomic round-robin state, assignments, and submission records
   dashboard/            Reusable read-only admin UI
 examples/
   contact-sales/        Self-contained form, fixtures, server, and tests
@@ -41,7 +41,7 @@ The minimum SDK lives in `packages/core`, and the Attio adapter lives in
 ## Contact-sales example
 
 - `examples/contact-sales/fixtures/routing`: form schema, representatives,
-  territories, and ordered rules.
+  and territories. Ordered rules live in `router.config.ts`.
 - `examples/contact-sales/fixtures/attio`: deterministic CRM and enrichment data.
 - `examples/contact-sales/fixtures/routing/scenarios.ts`: shared form presets and end-to-end expected decisions.
 
@@ -74,3 +74,19 @@ repository `domeccleston/routing-sdk`, the branch containing the docs, and
 documentation directory `docs`. The Mintlify GitHub App must have access to this
 repository. Push the docs to the configured branch to trigger a deployment.
 The project ID is dashboard metadata; it does not belong in `docs.json`.
+
+## Code quality
+
+Run `npm run check` for all checks (Oxlint, Oxfmt, Knip, TypeScript, and tests).
+The same command runs in GitHub Actions; live Attio tests are excluded.
+
+| Command                | Purpose                                         |
+| ---------------------- | ----------------------------------------------- |
+| `npm run lint`         | Lint all workspaces; warnings fail the check    |
+| `npm run lint:fix`     | Apply safe lint fixes                           |
+| `npm run format`       | Format source, markup, styles, config, and docs |
+| `npm run format:check` | Check formatting without modifying files        |
+| `npm run knip`         | Find unused files, exports, and dependencies    |
+
+Knip uses package exports as SDK entry points and explicitly includes browser
+scripts and package tests. Generated files and local databases are excluded.

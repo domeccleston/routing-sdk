@@ -2,17 +2,20 @@
   "name": "open-routing",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
   "workspaces": [
     "packages/*",
     "examples/*"
   ],
-  "engines": {
-    "node": ">=22"
-  },
+  "type": "module",
   "scripts": {
     "docs:dev": "cd docs && npx --yes mint@4.2.873 dev --port 3001",
     "docs:check": "cd docs && npx --yes mint@4.2.873 validate && npx --yes mint@4.2.873 broken-links",
+    "lint": "oxlint --deny-warnings .",
+    "lint:fix": "oxlint --fix .",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "knip": "knip",
+    "check": "npm run lint && npm run format:check && npm run knip && npm run typecheck && npm test",
     "dev": "npm run dev --workspace=@open-routing/example-contact-sales",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -22,8 +25,14 @@
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^24.3.0",
+    "knip": "^6.34.0",
+    "oxfmt": "^0.66.0",
+    "oxlint": "^1.81.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

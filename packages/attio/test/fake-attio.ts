@@ -32,10 +32,7 @@ export async function startFakeAttio(): Promise<FakeAttio> {
       return;
     }
 
-    if (
-      request.method === "POST" &&
-      request.url === "/v2/objects/companies/records/query"
-    ) {
+    if (request.method === "POST" && request.url === "/v2/objects/companies/records/query") {
       const body = (await readJson(request)) as { filter?: { domains?: string } };
       const domain = body.filter?.domains;
       const matchingCompanies = companies.data.filter((company) =>

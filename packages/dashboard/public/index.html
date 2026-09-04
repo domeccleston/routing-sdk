@@ -1,16 +1,68 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Routing — Submissions</title><link rel="stylesheet" href="/admin/dashboard.css"><script src="/admin/dashboard.js" defer></script></head>
-<body>
-<header><a class="brand" href="/admin"><span class="mark">↗</span> Open Routing <span class="tag">LOCAL</span></a><a href="/">Open contact form ↗</a></header>
-<main>
-<div class="heading"><div><p class="eyebrow">ROUTING ACTIVITY</p><h1>Submissions</h1><p class="muted">Every hand-raise. Every decision. One clear record.</p></div><span id="connection" role="status">Connecting…</span></div>
-<div class="metrics"><div><span>Submissions</span><strong id="total">—</strong></div><div><span>Booked route · this page</span><strong id="routed">—</strong></div><div><span>Success page · this page</span><strong id="unrouted">—</strong></div><div><span>Failed · this page</span><strong id="failed">—</strong></div></div>
-<section class="workspace">
-<div class="list-pane"><div class="toolbar"><label>Status <select id="status"><option value="">All submissions</option><option value="completed">Completed</option><option value="pending">Pending</option><option value="failed">Failed</option></select></label><button id="refresh">Refresh</button></div>
-<p id="error" role="alert" hidden></p><div class="table-wrap"><table><thead><tr><th>Company / submission</th><th>Decision</th><th>Received</th></tr></thead><tbody id="rows"></tbody></table></div>
-<div id="empty" hidden><h2>No submissions yet</h2><p>Submit the contact-sales form to see the routing decision, provider data, and rule trace here.</p><a href="/">Open the form ↗</a></div>
-<footer><button id="previous">← Previous</button><span id="page"></span><button id="next">Next →</button></footer></div>
-<aside id="detail" aria-live="polite"><div class="placeholder"><span>↗</span><h2>Follow the decision</h2><p>Select a submission to inspect its inputs, provider facts, and routing rules.</p></div></aside>
-</section><p class="footnote">Stored locally in SQLite · Sensitive form fields are redacted before storage · Refreshes every 5 seconds</p>
-</main></body></html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Routing — Submissions</title>
+    <link rel="stylesheet" href="/admin/dashboard.css" />
+    <script src="/admin/dashboard.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/admin"
+        ><span class="mark">↗</span> Open Routing <span class="tag">LOCAL</span></a
+      ><a href="/">Open contact form ↗</a>
+    </header>
+    <main>
+      <h1>Submissions</h1>
+      <div class="metrics">
+        <div><span>Submissions</span><strong id="total">—</strong></div>
+        <div><span>Assigned · this page</span><strong id="routed">—</strong></div>
+        <div><span>Unassigned · this page</span><strong id="unrouted">—</strong></div>
+        <div><span>Failed · this page</span><strong id="failed">—</strong></div>
+      </div>
+      <section class="workspace">
+        <div class="list-pane">
+          <div class="toolbar">
+            <label
+              >Status
+              <select id="status">
+                <option value="">All submissions</option>
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+                <option value="failed">Failed</option>
+              </select></label
+            ><button id="refresh">Refresh</button>
+          </div>
+          <p id="error" role="alert" hidden></p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Company / submission</th>
+                  <th>Decision</th>
+                  <th>Received</th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+          <div id="empty" hidden>
+            <h2>No submissions yet</h2>
+            <a href="/">Open the form ↗</a>
+          </div>
+          <footer>
+            <button id="previous">← Previous</button><span id="page"></span
+            ><button id="next">Next →</button>
+          </footer>
+        </div>
+        <aside id="detail" aria-live="polite">
+          <div class="placeholder">
+            <p>Select a submission to view details.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

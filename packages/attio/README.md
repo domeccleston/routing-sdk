@@ -13,4 +13,3 @@ const ownership = attio({
 The adapter returns normalized owner identities and distinguishes owned,
 unowned, missing-company, and unavailable states. Booking URLs remain outside
 the CRM adapter.
-
