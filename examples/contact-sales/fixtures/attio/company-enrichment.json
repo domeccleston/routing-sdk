@@ -1,0 +1,38 @@
+{
+  "acme.example": {
+    "name": "Acme Corporation",
+    "domain": "acme.example",
+    "employeeCount": 120,
+    "country": "US",
+    "industry": "Manufacturing"
+  },
+  "globex.example": {
+    "name": "Globex GmbH",
+    "domain": "globex.example",
+    "employeeCount": 900,
+    "country": "DE",
+    "industry": "Industrial technology"
+  },
+  "enterprise-us.example": {
+    "name": "Enterprise US",
+    "domain": "enterprise-us.example",
+    "employeeCount": 1200,
+    "country": "US",
+    "industry": "Software"
+  },
+  "commercial-emea.example": {
+    "name": "Commercial EMEA",
+    "domain": "commercial-emea.example",
+    "employeeCount": 80,
+    "country": "GB",
+    "industry": "Software"
+  },
+  "unowned.example": {
+    "name": "Unowned Systems",
+    "domain": "unowned.example",
+    "employeeCount": 600,
+    "country": "US",
+    "industry": "Security"
+  }
+}
+

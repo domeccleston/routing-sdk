@@ -1,0 +1,11 @@
+{
+  "data": [
+    {
+      "id": { "workspace_member_id": "rep_marcus" },
+      "first_name": "Marcus",
+      "last_name": "Lee",
+      "email_address": "marcus@northstar.example"
+    }
+  ]
+}
+

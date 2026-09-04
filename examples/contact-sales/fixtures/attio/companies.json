@@ -1,0 +1,29 @@
+{
+  "data": [
+    {
+      "id": { "record_id": "company_acme" },
+      "values": {
+        "name": [{ "value": "Acme Corporation" }],
+        "domains": [{ "domain": "acme.example" }],
+        "account_owner": [{ "referenced_actor_id": "rep_marcus" }]
+      }
+    },
+    {
+      "id": { "record_id": "company_globex" },
+      "values": {
+        "name": [{ "value": "Globex GmbH" }],
+        "domains": [{ "domain": "globex.example" }],
+        "account_owner": [{ "referenced_actor_id": "rep_freya" }]
+      }
+    },
+    {
+      "id": { "record_id": "company_unowned" },
+      "values": {
+        "name": [{ "value": "Unowned Systems" }],
+        "domains": [{ "domain": "unowned.example" }],
+        "account_owner": []
+      }
+    }
+  ]
+}
+

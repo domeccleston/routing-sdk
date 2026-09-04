@@ -1,0 +1,31 @@
+[
+  {
+    "id": "us-enterprise",
+    "name": "US Enterprise",
+    "countries": ["US"],
+    "minimumEmployees": 500,
+    "repIds": ["rep_amelia"]
+  },
+  {
+    "id": "us-commercial",
+    "name": "US Commercial",
+    "countries": ["US"],
+    "maximumEmployees": 499,
+    "repIds": ["rep_marcus"]
+  },
+  {
+    "id": "emea-enterprise",
+    "name": "EMEA Enterprise",
+    "countries": ["GB", "DE", "FR", "NL", "ES", "IT", "IE"],
+    "minimumEmployees": 250,
+    "repIds": ["rep_freya"]
+  },
+  {
+    "id": "emea-commercial",
+    "name": "EMEA Commercial",
+    "countries": ["GB", "DE", "FR", "NL", "ES", "IT", "IE"],
+    "maximumEmployees": 249,
+    "repIds": ["rep_luca"]
+  }
+]
+

@@ -1,0 +1,27 @@
+{
+  "name": "open-routing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace=@open-routing/example-contact-sales",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:attio": "node --env-file-if-exists=.env.local ./node_modules/vitest/vitest.mjs run packages/attio/test/live-attio.test.ts",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,1 @@
+{"name":"@open-routing/store-sqlite","version":"0.0.0","private":true,"type":"module","exports":"./src/index.ts","dependencies":{"@open-routing/core":"0.0.0","better-sqlite3":"^13.0.3"},"scripts":{"typecheck":"tsc --noEmit"}}

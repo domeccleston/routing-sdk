@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Northstar — Contact sales</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/prefill.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <section class="intro">
+        <p class="eyebrow">Northstar</p>
+        <h1>Talk to our sales team</h1>
+        <p class="lede">
+          Tell us a little about your team. We’ll connect you with the right
+          person and take you straight to their calendar.
+        </p>
+        <section class="presets" aria-labelledby="presets-title">
+          <h2 id="presets-title">Try a routing scenario</h2>
+          <p>Fill the form with sample data, then submit to see the result.</p>
+          <label for="scenario">Prefill with</label>
+          <select id="scenario" disabled>
+            <option value="">Loading scenarios…</option>
+          </select>
+          <p id="scenario-summary" role="status" aria-live="polite"></p>
+          <button id="clear-form" type="button">Clear form</button>
+          <a href="/admin" target="_blank" rel="noopener">View routing dashboard ↗</a>
+        </section>
+      </section>
+
+      <form action="/route" method="post">
+        <label>
+          Full name
+          <input name="fullName" autocomplete="name" required />
+        </label>
+
+        <label>
+          Work email
+          <input name="workEmail" type="email" autocomplete="email" required />
+        </label>
+
+        <label>
+          Company name
+          <input name="companyName" autocomplete="organization" required />
+        </label>
+
+        <div class="row">
+          <label>
+            Company size
+            <select name="companySize" required>
+              <option value="" selected disabled>Select…</option>
+              <option value="1-50">1–50</option>
+              <option value="51-200">51–200</option>
+              <option value="201-500">201–500</option>
+              <option value="501-1000">501–1,000</option>
+              <option value="1001+">1,001+</option>
+            </select>
+          </label>
+
+          <label>
+            Seats required
+            <input name="requestedSeats" type="number" min="1" step="1" required />
+          </label>
+        </div>
+
+        <label>
+          What can we help with?
+          <select name="requestType" required>
+            <option value="" selected disabled>Select…</option>
+            <option value="sales">Buying Northstar</option>
+            <option value="support">Product support</option>
+            <option value="partnership">Partnership</option>
+          </select>
+        </label>
+
+        <label>
+          Anything else?
+          <textarea name="message" rows="4"></textarea>
+        </label>
+
+        <button type="submit">Find my team</button>
+      </form>
+    </main>
+  </body>
+</html>

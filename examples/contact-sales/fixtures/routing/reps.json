@@ -1,0 +1,30 @@
+[
+  {
+    "id": "rep_amelia",
+    "name": "Amelia Carter",
+    "email": "amelia@northstar.example",
+    "active": true,
+    "bookingUrl": "https://cal.com/dom-eccleston/30min"
+  },
+  {
+    "id": "rep_marcus",
+    "name": "Marcus Lee",
+    "email": "marcus@northstar.example",
+    "active": true,
+    "bookingUrl": "https://cal.com/dom-eccleston/30min"
+  },
+  {
+    "id": "rep_freya",
+    "name": "Freya Bennett",
+    "email": "freya@northstar.example",
+    "active": true,
+    "bookingUrl": "https://cal.com/dom-eccleston/30min"
+  },
+  {
+    "id": "rep_luca",
+    "name": "Luca Moretti",
+    "email": "luca@northstar.example",
+    "active": true,
+    "bookingUrl": "https://cal.com/dom-eccleston/30min"
+  }
+]

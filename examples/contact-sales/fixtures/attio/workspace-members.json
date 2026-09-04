@@ -1,0 +1,33 @@
+{
+  "data": [
+    {
+      "id": { "workspace_member_id": "rep_amelia" },
+      "first_name": "Amelia",
+      "last_name": "Carter",
+      "email_address": "amelia@northstar.example",
+      "access_level": "member"
+    },
+    {
+      "id": { "workspace_member_id": "rep_marcus" },
+      "first_name": "Marcus",
+      "last_name": "Lee",
+      "email_address": "marcus@northstar.example",
+      "access_level": "member"
+    },
+    {
+      "id": { "workspace_member_id": "rep_freya" },
+      "first_name": "Freya",
+      "last_name": "Bennett",
+      "email_address": "freya@northstar.example",
+      "access_level": "member"
+    },
+    {
+      "id": { "workspace_member_id": "rep_luca" },
+      "first_name": "Luca",
+      "last_name": "Moretti",
+      "email_address": "luca@northstar.example",
+      "access_level": "member"
+    }
+  ]
+}
+
