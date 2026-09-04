@@ -1,50 +1,23 @@
 ---
 title: "Packages"
-description: "The responsibilities and boundaries of each Open Routing package."
+description: "Choose the building blocks for your integration."
 ---
 
-## Core
+| Package                      | Responsibility                                                    | Documentation                                    |
+| ---------------------------- | ----------------------------------------------------------------- | ------------------------------------------------ |
+| `@open-routing/core`         | Schemas, routing rules, assignments, provider and store contracts | [Router API](/reference/router)                  |
+| `@open-routing/store-sqlite` | Durable local assignment and submission state                     | [Storage](/reference/storage)                    |
+| `@open-routing/attio`        | CRM ownership lookup                                              | [Integrations](/integrations)                    |
+| `@open-routing/pdl`          | Company enrichment                                                | [Integrations](/integrations)                    |
+| `@open-routing/dashboard`    | Local inspection of submissions and routing state                 | [Contact-sales example](/examples/contact-sales) |
 
-`@open-routing/core` provides typed form schemas and runtime validation, normalized
-company-enrichment and CRM-ownership contracts, ordered routing rules, owner assignment,
-round-robin pools, and serializable decisions.
+Start with the [quickstart](/quickstart) for a working combination. These packages
+are currently consumed from the repository workspace.
 
-Use `defineSchema` to describe the form and `createRouter` to connect the schema,
-providers, people, pools, rules, assignment store, and fallback redirect. The working configuration is
-in `examples/contact-sales/router.config.ts`.
-
-## Attio
-
-`@open-routing/attio` implements the CRM ownership provider contract.
-
-```ts
-import { attio } from "@open-routing/attio";
-
-const ownership = attio({
-  apiKey: process.env.ATTIO_API_KEY!,
-});
-```
-
-Supply this provider as `providers.ownership` in your router configuration. Keep
-the API key on the server. The adapter returns normalized owner identities and
-distinguishes owned, unowned, missing-company, and unavailable states. Booking
-URLs are configured outside the CRM adapter.
-
-## SQLite store
-
-`@open-routing/store-sqlite` implements the core `DecisionStore` contract using a
-local SQLite database. It stores submission lifecycle state and decision snapshots,
-and supports detail lookup, status filtering, pagination, and newest-first lists.
-
-See [submission and decision records](/decision-records) for schema versioning,
-privacy filtering, and local-only limitations.
-
-## Dashboard
-
-`@open-routing/dashboard` provides a read-only local admin UI. The host uses
-`dashboardAsset()` to resolve allow-listed assets and supplies
-`/admin/api/submissions` using `DecisionStore.list()`.
-
-The dashboard displays submissions, decision snapshots, provider data, and rule
-traces. Filtering and pagination run on the server; the list refreshes every five
-seconds. The package has no CRM calls, database driver, or example fixtures.
+<div className="planned-feature">
+  <span className="planned-label">Planned · Versioned releases</span>
+  <p>
+    Published npm packages, supported runtime versions, release notes, and upgrade instructions will
+    make installation independent of a repository checkout.
+  </p>
+</div>

@@ -1,57 +1,67 @@
 ---
-title: "Submission and decision model"
-description: "Record lifecycle, privacy filtering, and local persistence limitations."
+title: "Decision records"
+description: "Explain an assignment and distinguish it from a submission or a booked meeting."
 ---
 
-# Submission and decision model
+## Three events, different meanings
 
-One `SubmissionRecord` represents a received form POST. Its ID exists before
-validation and provider calls; the routing decision has its own ID, linked by
-the embedded snapshot.
+A **submission** is an attempt to send a form. An **assignment** is a committed
+routing result. A **booking** is a confirmed scheduling event. Multiple submission
+attempts can share one assignment; an assignment does not prove that a booking occurred.
 
-Lifecycle: `pending` → `completed` or `failed`. Completed means routing finished,
-not that a meeting was booked. New decisions are assigned or unassigned. Legacy
-routed/not-routed/unresolved snapshots remain readable. Final records cannot be overwritten.
+## Read an assignment
 
-Fields:
+Use `outcome`, `personId`, `poolId`, and `ruleId` to identify what happened.
+`redirectUrl` tells the host where to send the visitor. `facts` captures normalized
+provider results; `trace` explains the leaf conditions evaluated before the result.
+`warnings` records provider availability and owner-eligibility issues.
 
-- `id`, `receivedAt`: submission identity and arrival time.
-- `status`, `completedAt`, `durationMs`: processing lifecycle.
-- `configVersion`: SHA-256 fingerprint of the example configuration and routing fixtures.
-- `input`: declared form fields after privacy filtering.
-- `decision`: outcome, selected rule, pool, person, redirect URL, normalized provider facts,
-  evaluated rule trace, warnings, and decision ID. The raw input is not duplicated.
-- `error`: safe error code and invalid field names; never exception messages or credentials.
+A trace follows configured rule order. An ineligible owner may have a matching
+condition in the trace even though a later pool rule supplied the final assignment.
+See the [result reference](/reference/router#result) for every field.
 
-SQLite stores a versioned JSON record alongside indexed ID, status, and received
-time columns. `PRAGMA user_version` tracks schema version (currently 2).
-The store supports detail lookup, status filtering, pagination, and newest-first lists.
+## Submission lifecycle
 
-Privacy is enforced again at the storage boundary: undeclared/omitted fields are
-dropped; masked fields and private rule operands are redacted. Normalized provider
-facts (including CRM owner identity) remain visible to the local administrator.
-The database is not encrypted. No retention policy or deletion UI is implemented yet.
+A `SubmissionRecord` starts as `pending` and ends as `completed` or `failed`.
+Completed means routing finished, including an unassigned result. Final records
+cannot be overwritten through the store API. Interrupted requests can remain pending.
 
-The example database is `examples/contact-sales/.data/routing.sqlite`, ignored by
-Git. There is no backfill of earlier requests and no fabricated dashboard data.
-Pending records survive interrupted processes; they are not falsely marked completed.
+| Field                                 | Purpose                                         |
+| ------------------------------------- | ----------------------------------------------- |
+| `id`, `receivedAt`                    | Submission identity and arrival time            |
+| `status`, `completedAt`, `durationMs` | Processing lifecycle                            |
+| `configVersion`                       | Host-supplied configuration fingerprint         |
+| `input`                               | Declared fields after privacy filtering         |
+| `decision`                            | Assignment snapshot, facts, trace, and warnings |
+| `error`                               | Safe failure code and invalid field names       |
 
-The example server binds to loopback. `/admin` and its read-only API reject foreign
-Host headers and disable caching. This is a local admin tool, not production
-authentication: do not expose it via a tunnel or reverse proxy without access control.
+The example fingerprints its configuration and fixtures. Each HTTP attempt has its
+own record; retries can contain the same assignment ID. The store offers detail
+lookup, status filtering, pagination, and newest-first lists.
 
-Assignment persistence is mandatory: the `assignments` table stores an immutable
-result by idempotency key, and `pool_rotations` stores the last selected person per
-pool. Selection, advancement, and saving happen in one SQLite write transaction.
-An assignment storage failure prevents redirecting and returns HTTP 503.
+## Privacy boundary
 
-Submission audit logging is separate and best-effort. Logging errors are recorded
-without input contents; these attempts may be missing or pending in the dashboard,
-but cannot lose a committed assignment or advance its rotation again.
-Every POST attempt gets its own submission record; retries share one assignment ID.
-The form gets a hidden `_submissionId` per page load, stripped before schema validation.
-API callers may supply `Idempotency-Key`; it takes precedence over the hidden key.
-Loading a fresh form starts a new opportunity. Reusing a key returns its original
-assignment even if fields change. Keys are not authentication tokens.
+The SQLite submission store applies the schema's privacy policy: omitted and
+undeclared input fields are dropped, masked fields and private rule operands are
+redacted. Raw form input is not duplicated inside the assignment snapshot.
+Normalized provider facts, including CRM owner identity, remain visible to the
+administrator. Privacy flags are not encryption or a retention policy.
 
-Booking confirmation and webhook ingestion are separate future work.
+The local database is not encrypted by the SDK. Keep it outside Git and restrict
+access to both its files and the dashboard. The example uses
+`examples/contact-sales/.data/routing.sqlite`.
+
+## Assignment and audit failures
+
+Assignment persistence is mandatory: a failure must prevent a successful routing
+redirect. Audit logging is separate and best-effort in the example; a logging failure
+can leave an attempt missing or pending without losing a committed assignment.
+See [storage guarantees](/reference/storage).
+
+<div className="planned-feature">
+  <span className="planned-label">Planned · Data lifecycle</span>
+  <h2>Retention, deletion, and booking reconciliation</h2>
+  <p>Configure retention periods, delete stored personal data, and join scheduling
+  events to assignment records. These controls and booking reconciliation are not
+  implemented as a supported end-to-end workflow.</p>
+</div>

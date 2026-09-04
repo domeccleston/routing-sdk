@@ -1,0 +1,111 @@
+---
+title: "Routing scenarios"
+description: "Compose policies for account ownership, territories, and fair distribution."
+---
+
+Start with the business outcome, then order your rules from most specific to most
+general. The snippets below belong in `createRouter({ rules: [...] })`; referenced
+people and pools must exist in that router's configuration.
+
+## Keep an account with its owner
+
+**When:** a returning account already has a relationship with your sales team.
+**Outcome:** the eligible CRM owner gets the lead before territory routing runs.
+
+```ts
+{
+  id: "existing-crm-owner",
+  when: { field: "crm.owner.status", equals: "owned" },
+  assign: { owner: true },
+}
+```
+
+Add an [ownership provider](/integrations). Its owner ID must match a key in
+`people`. If that person is missing or inactive, the router records
+`crm_owner_not_eligible` and continues to later rules. Ownership has priority only
+because you put this rule first.
+
+## Route by geography and company size
+
+**When:** new business belongs to different teams by market or segment.
+**Outcome:** eligible members of the matched team share leads in rotation.
+
+```ts
+{
+  id: "us-enterprise",
+  when: {
+    all: [
+      { field: "company.country", equals: "US" },
+      { field: "company.employeeCount", gte: 500 },
+    ],
+  },
+  assign: { pool: "us-enterprise" },
+}
+```
+
+Configure an enrichment provider and a `us-enterprise` pool. Missing employee count
+does not match a numeric condition. Do not silently treat unknown data as zero.
+Country values must match the normalized values returned by your provider.
+
+## Separate support from sales
+
+**When:** one form accepts multiple request types.
+**Outcome:** support visitors reach the appropriate page without advancing a pool.
+
+```ts
+{
+  id: "support-request",
+  when: { field: "input.requestType", equals: "support" },
+  redirect: "/support",
+  reason: "support_request",
+}
+```
+
+Declare `requestType` in your schema and put this rule before sales assignment.
+The result is `unassigned`, with the redirect you configured.
+
+## Share inbound leads fairly
+
+Use `assign: { pool: "sales" }` for round-robin assignment. Pool membership order
+defines rotation; `active: false` excludes a person. A new idempotency key advances
+the pool, while a retry returns the saved result.
+
+If the matched pool has no active members, routing ends at the fallback with
+`no_active_members`; it does not try the next rule. Configure and monitor pool
+membership accordingly. See [storage guarantees](/reference/storage).
+
+## Handle missing company data
+
+Place an explicit fallback rule after ownership and territory rules:
+
+```ts
+{
+  id: "company-unresolved",
+  when: { field: "company.status", in: ["not_found", "unavailable"] },
+  redirect: "/thanks",
+  reason: "company_data_unavailable",
+}
+```
+
+This acknowledges the request without claiming an assignment. A provider returning
+`unavailable` can be handled by rules; a provider throwing an exception rejects the
+assignment call. See [provider contracts](/reference/providers).
+
+<div className="planned-feature">
+  <span className="planned-label">Planned · Advanced assignment</span>
+  <h2>Capacity, weights, and working hours</h2>
+  <p>
+    Distribute leads proportionally, cap a person's workload, and skip people who are out of office.
+    These policies need explicit capacity and availability contracts; the current pool strategy is
+    round-robin with an active flag.
+  </p>
+</div>
+
+<div className="planned-feature">
+  <span className="planned-label">Planned · Policy simulation</span>
+  <h2>Compare a policy before rollout</h2>
+  <p>
+    Replay historical leads against a candidate policy, explain changed assignments, and compare
+    team distribution without advancing live pools. A public dry-run or replay API is not available.
+  </p>
+</div>

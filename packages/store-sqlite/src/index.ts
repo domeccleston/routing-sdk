@@ -2,6 +2,20 @@ import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { readAnalytics, type AnalyticsSummary } from "./analytics.js";
+import { createWorkflowStore } from "./workflow-store.js";
+import type { WorkflowStore } from "./workflow-types.js";
+export type {
+  JsonValue,
+  WorkflowStart,
+  WorkflowStepResult,
+  WorkflowRecord,
+  WorkflowStore,
+  WorkflowStage,
+  WorkflowStatus,
+  WorkflowDefinition,
+  WorkflowHandlerContext,
+} from "./workflow-types.js";
+export { createWorkflowWorker } from "./workflow-worker.js";
 export type { AnalyticsSummary } from "./analytics.js";
 import {
   redactDecision,
@@ -22,6 +36,7 @@ export function sqliteStore(
 ): DecisionStore &
   AssignmentStore & {
     close(): void;
+    workflows: WorkflowStore;
     analytics(people?: readonly { id: string; name: string }[]): AnalyticsSummary;
   } {
   if (filename !== ":memory:") mkdirSync(dirname(filename), { recursive: true, mode: 0o700 });
@@ -31,7 +46,7 @@ export function sqliteStore(
   try {
     db.transaction(() => {
       const version = db.pragma("user_version", { simple: true }) as number;
-      if (version > 2) throw new Error("Decision database is newer than this SDK");
+      if (version > 4) throw new Error("Decision database is newer than this SDK");
       if (version === 0) {
         db.exec(`CREATE TABLE submissions (
       id TEXT PRIMARY KEY, received_at TEXT NOT NULL, status TEXT NOT NULL
@@ -46,6 +61,42 @@ export function sqliteStore(
     );
     CREATE TABLE pool_rotations (pool_id TEXT PRIMARY KEY, last_person_id TEXT NOT NULL);`);
         db.pragma("user_version = 2");
+      }
+      if (version < 3) {
+        db.exec(`CREATE TABLE lead_workflows (
+          id TEXT PRIMARY KEY, status TEXT NOT NULL CHECK(status IN ('pending','running','awaiting_approval','completed','failed')),
+          available_at INTEGER NOT NULL, record_json TEXT NOT NULL
+        );
+        CREATE INDEX idx_workflows_ready ON lead_workflows(status, available_at);`);
+        db.pragma("user_version = 3");
+      }
+      if (version < 4) {
+        // One-time migration of the original contact-sales-specific record format.
+        db.exec(
+          "ALTER TABLE lead_workflows ADD COLUMN definition TEXT NOT NULL DEFAULT 'contact-sales-v1'; CREATE INDEX idx_workflows_definition_ready ON lead_workflows(definition, status, available_at);",
+        );
+        const rows = db.prepare("SELECT id, record_json FROM lead_workflows").all() as {
+          id: string;
+          record_json: string;
+        }[];
+        for (const row of rows) {
+          const { research, ...legacy } = JSON.parse(row.record_json);
+          const record = {
+            ...legacy,
+            definition: "contact-sales-v1",
+            outputs: research ? { research } : {},
+            resumeAt: legacy.status === "awaiting_approval" ? "crm" : null,
+          };
+          if (record.status === "running") {
+            record.status = "pending";
+            record.claimToken = null;
+            record.leaseUntil = null;
+          }
+          db.prepare(
+            "UPDATE lead_workflows SET status = ?, available_at = ?, record_json = ? WHERE id = ?",
+          ).run(record.status, record.availableAt, JSON.stringify(record), row.id);
+        }
+        db.pragma("user_version = 4");
       }
     }).immediate();
   } catch (error) {
@@ -111,6 +162,11 @@ export function sqliteStore(
     );
   };
   return {
+    workflows: createWorkflowStore(db, {
+      getAssignment,
+      getPoolCursor,
+      commitAssignment: (request) => commitAssignment.immediate(request),
+    }),
     analytics(people = []) {
       return db.transaction(() => readAnalytics(db, people))();
     },

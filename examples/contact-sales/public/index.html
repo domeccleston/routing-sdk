@@ -24,12 +24,19 @@
             <option value="">Loading scenarios…</option>
           </select>
           <p id="scenario-summary" role="status" aria-live="polite"></p>
+          <label for="research-scenario">Research demo scenario</label>
+          <select id="research-scenario" name="_researchScenario" form="contact-sales">
+            <option value="clean">Clean — proceed automatically</option>
+            <option value="changes">Changes — request approval</option>
+            <option value="failure">Failure — recover with retry</option>
+          </select>
+          <p>Sample research only. Notifications and CRM updates are mocked.</p>
           <button id="clear-form" type="button">Clear form</button>
           <a href="/admin" target="_blank" rel="noopener">View routing dashboard ↗</a>
         </section>
       </section>
 
-      <form action="/route" method="post">
+      <form id="contact-sales" action="/route" method="post">
         <label>
           Full name
           <input name="fullName" autocomplete="name" required />

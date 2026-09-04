@@ -1,0 +1,56 @@
+---
+title: "Contact-sales form"
+description: "Route an inbound request from form submission to a booking destination."
+---
+
+This example combines a form, company enrichment, CRM ownership, ordered rules,
+SQLite persistence, and a local decision dashboard.
+
+## Run the example
+
+From the repository root:
+
+```sh
+npm install
+env -u PDL_API_KEY npm run dev
+```
+
+Open [the form](http://localhost:3000). The command above keeps enrichment in fixture
+mode even if your shell has a PDL key. No CRM account is required. Demo representatives
+share a booking URL; inspect the assignment in the dashboard to distinguish them.
+
+## Try three journeys
+
+| Submit                        | Expected behavior                                            | Inspect                          |
+| ----------------------------- | ------------------------------------------------------------ | -------------------------------- |
+| Existing CRM ownership preset | Keep the lead with its eligible owner                        | `ruleId` is `existing-crm-owner` |
+| New US enterprise preset      | Assign to the enterprise pool                                | `poolId` and `personId`          |
+| Support request preset        | Redirect to the success page without assigning a salesperson | `outcome` is `unassigned`        |
+
+Open [the dashboard](http://localhost:3000/admin) after submitting. Review the
+selected person, provider facts, and rule trace. Each fresh form load starts a new
+submission opportunity. Retrying with the same idempotency key preserves the assignment.
+
+## Request flow
+
+1. The host receives the form and separates its idempotency key from routing fields.
+2. The router parses the declared fields and resolves company and ownership facts.
+3. The first applicable routing action selects a destination.
+4. The store commits the assignment and any pool advancement together.
+5. The host returns a `303` redirect and records a submission audit entry.
+
+Assignment storage failure must prevent a successful redirect. Audit logging failure
+is separate: it must not repeat an already committed assignment.
+
+## Adapt it to your form
+
+Edit `examples/contact-sales/router.config.ts` to change fields and rule order.
+Keep the non-sales rule before ownership and territory rules so a support request
+never consumes a sales rotation. Put ownership ahead of territory assignment if
+existing relationships take precedence.
+
+Configure representatives and territories in `examples/contact-sales/fixtures/routing/`.
+Add providers using the [integration guide](/integrations).
+
+The server and dashboard are local tools. Use the [production guide](/guides/production)
+to see what an internet-facing integration must provide.

@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { SubmissionRecord, PoolState } from "@open-routing/core";
+import type { LeadWorkflow as WorkflowRecord } from "../src/lead-workflow.js";
 
 let child: ChildProcess;
 let base: string;
@@ -19,6 +20,8 @@ beforeAll(async () => {
       env: {
         ...process.env,
         PDL_API_KEY: "",
+        ATTIO_LIVE: "0",
+        ATTIO_E2E_DOMAIN: "",
         PORT: "0",
         ROUTING_DB_PATH: join(directory, "routing.sqlite"),
       },
@@ -63,6 +66,36 @@ const form = {
 };
 const submit = (input: Record<string, string>) =>
   fetch(`${base}/route`, { method: "POST", body: new URLSearchParams(input), redirect: "manual" });
+
+async function workflowFor(key: string, scenario: string) {
+  const response = await submit({ ...form, _submissionId: key, _researchScenario: scenario });
+  expect(response.status).toBe(303);
+  expect(response.headers.get("location")).toBe("https://cal.com/dom-eccleston/30min");
+  const page = await fetch(`${base}/admin/api/submissions`).then((r) => r.json());
+  const record = page.records[0];
+  expect(record.workflow.assignment).toEqual(record.decision);
+  expect(record.input).not.toHaveProperty("_researchScenario");
+  expect(JSON.stringify(record.workflow)).not.toContain(form.workEmail);
+  expect(JSON.stringify(record.workflow)).not.toContain(form.message);
+  return record.workflow as WorkflowRecord;
+}
+async function waitForWorkflow(id: string, status: string): Promise<WorkflowRecord> {
+  const deadline = Date.now() + 8000;
+  do {
+    const workflow = await fetch(`${base}/admin/api/workflows/${id}`).then((r) => r.json());
+    if (workflow.status === status) return workflow;
+    await new Promise((resolve) => setTimeout(resolve, 30));
+  } while (Date.now() < deadline);
+  throw new Error(`Workflow did not reach ${status}`);
+}
+async function action(id: string, type: string, body: unknown) {
+  const { csrfToken } = await fetch(`${base}/admin/api/submissions`).then((r) => r.json());
+  return fetch(`${base}/admin/api/workflows/${id}/${type}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: base, "X-Admin-Token": csrfToken },
+    body: JSON.stringify(body),
+  });
+}
 
 describe("local admin and submission lifecycle", () => {
   it("serves empty analytics with honest booking metrics and local read-only protection", async () => {
@@ -215,5 +248,87 @@ describe("local admin and submission lifecycle", () => {
       }).on("error", reject);
     });
     expect(status).toBe(403);
+  });
+});
+
+describe("form research and local review", () => {
+  it("serves research controls and completes clean fixture research", async () => {
+    expect(await fetch(base).then((r) => r.text())).toContain('name="_researchScenario"');
+    expect((await fetch(`${base}/admin/workflow-panel.js`)).status).toBe(200);
+    const workflow = await workflowFor("research-clean", "clean");
+    const completed = await waitForWorkflow(workflow.id, "completed");
+    expect(completed.research?.brief).toContain("Demo scenario");
+    expect(completed.resolution?.action).toBe("keep-initial");
+    expect(completed.assignment).toEqual(workflow.assignment);
+    await submit({ ...form, _submissionId: "research-clean", _researchScenario: "changes" });
+    expect(await fetch(`${base}/admin/api/workflows/${workflow.id}`).then((r) => r.json())).toEqual(
+      completed,
+    );
+  });
+  it.each(["accept-changes", "keep-initial"])(
+    "holds changes until %s and records the review",
+    async (resolution) => {
+      const workflow = await workflowFor(`research-${resolution}`, "changes");
+      const held = await waitForWorkflow(workflow.id, "awaiting_approval");
+      expect(held.stage).toBe("notify");
+      expect(held.resolution).toBeNull();
+      expect(held.research?.proposedChanges).toHaveLength(1);
+      expect(
+        (
+          await action(held.id, "resolve", {
+            action: resolution,
+            note: "Checked fixture evidence",
+            actor: "spoofed",
+          })
+        ).status,
+      ).toBe(200);
+      expect((await action(held.id, "resolve", { action: resolution, note: "Again" })).status).toBe(
+        409,
+      );
+      const completed = await waitForWorkflow(held.id, "completed");
+      expect(completed.resolution).toEqual({
+        action: resolution,
+        actor: "local-admin",
+        note: "Checked fixture evidence",
+      });
+      expect(completed.assignment).toEqual(workflow.assignment);
+    },
+  );
+  it("holds research failures and recovers through manual retry", async () => {
+    const workflow = await workflowFor("research-failure", "failure");
+    const failed = await waitForWorkflow(workflow.id, "failed");
+    expect(failed.stage).toBe("research");
+    expect(failed.research).toBeNull();
+    expect((await action(failed.id, "retry", {})).status).toBe(200);
+    const recovered = await waitForWorkflow(failed.id, "completed");
+    expect(recovered.assignment).toEqual(workflow.assignment);
+  });
+  it("protects mutations from missing tokens, foreign origins, invalid notes and unknown IDs", async () => {
+    const workflow = await workflowFor("research-security", "changes");
+    await waitForWorkflow(workflow.id, "awaiting_approval");
+    const endpoint = `${base}/admin/api/workflows/${workflow.id}/resolve`;
+    const { csrfToken } = await fetch(`${base}/admin/api/submissions`).then((r) => r.json());
+    for (const headers of [
+      { Origin: base },
+      { Origin: "https://attacker.example", "X-Admin-Token": csrfToken },
+      { "X-Admin-Token": csrfToken },
+    ]) {
+      expect(
+        (
+          await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...headers },
+            body: JSON.stringify({ action: "accept-changes", note: "Bad request" }),
+          })
+        ).status,
+      ).toBe(403);
+    }
+    expect(
+      (await action(workflow.id, "resolve", { action: "accept-changes", note: "" })).status,
+    ).toBe(400);
+    expect((await action(workflow.id, "retry", {})).status).toBe(409);
+    expect((await action("missing", "retry", {})).status).toBe(404);
+    expect((await submit({ ...form, _researchScenario: "invalid" })).status).toBe(400);
+    expect((await waitForWorkflow(workflow.id, "awaiting_approval")).resolution).toBeNull();
   });
 });

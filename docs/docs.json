@@ -9,11 +9,40 @@
   },
   "navigation": {
     "groups": [
-      { "group": "Get started", "pages": ["index", "quickstart"] },
-      { "group": "SDK", "pages": ["packages", "decision-records"] }
+      {
+        "group": "Get started",
+        "pages": ["index", "quickstart", "packages"]
+      },
+      {
+        "group": "Examples",
+        "pages": ["examples/index", "examples/contact-sales"]
+      },
+      {
+        "group": "Scenarios & integrations",
+        "pages": ["scenarios/index", "integrations/index"]
+      },
+      {
+        "group": "API reference",
+        "pages": [
+          "reference/router",
+          "reference/schema",
+          "reference/storage",
+          "reference/providers",
+          "decision-records"
+        ]
+      },
+      {
+        "group": "Go to production",
+        "pages": ["guides/production"]
+      }
     ]
   },
   "navbar": {
-    "links": [{ "label": "GitHub", "href": "https://github.com/domeccleston/routing-sdk" }]
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/domeccleston/routing-sdk"
+      }
+    ]
   }
 }

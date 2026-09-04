@@ -11,8 +11,8 @@ packages/
   core/                 Typed schemas, provider contracts, and routing engine
   attio/                Attio CRM ownership provider
   pdl/                  People Data Labs company enrichment provider
-  store-sqlite/         Atomic round-robin state, assignments, and submission records
-  dashboard/            Reusable read-only admin UI
+  store-sqlite/         Assignments, round-robin state, submissions, and durable lead workflows
+  dashboard/            Local admin UI with research review controls
 examples/
   contact-sales/        Self-contained form, fixtures, server, and tests
 ```
@@ -67,6 +67,44 @@ The [analytics view](http://localhost:3000/admin/analytics) summarizes company s
 industry, HQ country, and rep assignments. Booking confirmations are not tracked yet.
 
 ## Documentation
+
+### Live Attio end-to-end run
+
+`npm run dev:attio` loads `.env.local` and enables real Attio reads/writes.
+Set `ATTIO_API_KEY` and `ATTIO_WORKSPACE_MEMBER_ID` (the example maps its sample
+reps to this one real member). The workspace must have single-value text attributes
+`routing_research` and `routing_qualification`, plus `account_owner`.
+Research and notifications remain simulated. Live jobs use a separate definition
+ID so switching modes cannot send old demo jobs to Attio.
+
+For a labelled, repeatable test, run the server with `PORT=3002`,
+`ATTIO_E2E_DOMAIN=routing-sdk-e2e-YOUR-RUN.example.com` and a separate
+`ROUTING_DB_PATH`. Then run `npm run test:attio:e2e` with the same domain and
+member ID. It submits the form, verifies the calendar redirect and approval hold,
+approves the test proposal, reads back the real Attio owner/research/qualification,
+and checks replay deduplication. It retains the labelled company for inspection.
+Attio rejects the `.example` TLD; this runner uses a subdomain of reserved
+`example.com`. Tests in `npm run check` remain offline.
+
+For opt-in background research, notification, approval and CRM stages, see
+[SQLite lead workflows](packages/store-sqlite/README.md). Run the offline example:
+
+```sh
+npm run workflow:demo --workspace=@open-routing/example-contact-sales
+```
+
+The HTTP example now queues fixture research with every valid assignment and runs
+a background worker. Choose a research fixture on the form: clean, proposed changes,
+or failure. In `/admin`, select the submission to read the report, accept/reject
+changes with a review note, or retry failed research. The failure fixture recovers
+on manual retry. Existing submissions are not backfilled. Calendar redirects stay
+immediate; accepting changes does not change an existing booking.
+
+Both examples use simulated notifications and the Attio adapter with an in-memory
+demo transport; they make no external writes. The step sequence and approval policy
+live in `examples/contact-sales/src/lead-workflow.ts`, not in SQLite. Applications
+supply their own agent, messaging and CRM steps. The local admin's
+token and same-origin guards are not a replacement for production authentication.
 
 The Mintlify site lives in `docs/`. Preview it at <http://localhost:3001>:
 

@@ -1,0 +1,46 @@
+---
+title: "Provider contracts"
+description: "Resolve company and ownership facts without coupling routing rules to a vendor."
+---
+
+Providers receive a `CompanyLookup`: `{ domain: string, name?: string }`.
+The router derives it from [schema roles](/reference/schema#provider-lookup-roles),
+normalizes the domain to lowercase, and resolves enrichment and ownership concurrently.
+
+## CompanyEnrichmentProvider
+
+Implement `name` and `enrich(lookup): Promise<CompanyEnrichmentResult>`.
+
+| Status        | Payload                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------- |
+| `found`       | `company` with optional `name`, `domain`, `employeeCount`, `country`, `industry`, `annualRevenue` |
+| `not_found`   | No company match                                                                                  |
+| `unavailable` | `reason`: `timeout`, `rate_limited`, `unauthorized`, or `provider_error`                          |
+
+Found company fields are accessible in conditions as `company.country`,
+`company.employeeCount`, and so on. `company.status` remains available for fallback rules.
+Unknown fields should remain absent; do not invent values to satisfy a condition.
+
+## CrmOwnershipProvider
+
+Implement `name` and `findOwner(lookup): Promise<OwnershipResult>`.
+
+| Status              | Payload                                                  |
+| ------------------- | -------------------------------------------------------- |
+| `owned`             | `company: { id, name? }`, `owner: { id, email?, name? }` |
+| `unowned`           | `company: { id, name? }`                                 |
+| `company_not_found` | No CRM company match                                     |
+| `unavailable`       | The same reason values as enrichment                     |
+
+The rule context exposes the result at `crm.owner`. An owner must map by ID to an
+active configured person to receive an assignment. The adapter does not choose
+booking URLs or set ownership precedence.
+
+## Error behavior
+
+Return `unavailable` for a recoverable lookup failure that rules should handle.
+The router adds a warning and continues evaluation. An exception from a custom
+provider rejects the assignment; the core does not install a timeout or retry
+policy around arbitrary providers. Implement those policies in the adapter.
+
+See [available integrations](/integrations) for Attio and People Data Labs.

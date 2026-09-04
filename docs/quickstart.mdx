@@ -1,59 +1,97 @@
 ---
 title: "Quickstart"
-description: "Run the contact-sales example locally and inspect a routing decision."
+description: "Assign your first lead, inspect the result, and make retries safe."
 ---
 
-## Requirements
+Create a router with two people and a round-robin pool. This example runs locally
+without CRM credentials or network requests.
 
-Use Node.js 22 or newer and npm. These instructions run the SDK from its workspace
-in this repository.
+## 1. Set up the SDK
 
-## Start the example
+Requires Node.js 22 or later and npm. Until packages are published, run the example
+from a checkout of this repository:
 
 ```sh
 git clone https://github.com/domeccleston/routing-sdk.git
 cd routing-sdk
 npm install
-npm run dev
 ```
 
-Open [the contact-sales form](http://localhost:3000), choose a preset or enter form
-values, and submit it. The server validates the input, resolves fixture provider
-data, applies the routing configuration, and issues a `303` redirect to a calendar
-or the success page.
+<div className="planned-feature">
+  <span className="planned-label">Planned · npm installation</span>
+  <p>
+    Install versioned packages directly into your application. Registry installation instructions
+    will appear here when the first release is available.
+  </p>
+</div>
 
-The example uses fixture enrichment and ownership by default; no Attio API key is
-required. Demo representatives currently share one Cal.com booking URL.
+## 2. Configure and assign
 
-## Inspect the result
+Create `first-assignment.ts` at the repository root. The example uses illustrative
+booking URLs; replace them with your own before sending visitors to them.
 
-Open [the local dashboard](http://localhost:3000/admin) to see submissions, decision
-snapshots, provider data, and evaluated rules. Submissions are persisted in
-`examples/contact-sales/.data/routing.sqlite`.
+```ts
+import { createRouter, defineSchema } from "@open-routing/core";
+import { sqliteStore } from "@open-routing/store-sqlite";
 
-A completed submission means routing finished, not that a meeting was booked.
-Read [the record model](/decision-records) before using the store or exposing the
-dashboard beyond your machine.
+const schema = defineSchema({
+  workEmail: { type: "email", required: true, privacy: "mask" },
+});
+const store = sqliteStore(":memory:", schema);
+const router = createRouter({
+  schema,
+  people: {
+    alex: { name: "Alex", bookingUrl: "https://calendar.example/alex" },
+    sam: { name: "Sam", bookingUrl: "https://calendar.example/sam" },
+  },
+  pools: {
+    sales: { members: ["alex", "sam"], strategy: "round-robin" },
+  },
+  rules: [{ id: "new-sales-lead", when: { all: [] }, assign: { pool: "sales" } }],
+  fallback: { redirect: "/thanks" },
+  store,
+});
 
-## Customize routing
+try {
+  const lead = router.parse({ workEmail: "buyer@acme.example" });
+  const first = await router.assign(lead, { idempotencyKey: "lead-001" });
+  const retry = await router.assign(lead, { idempotencyKey: "lead-001" });
+  const next = await router.assign(lead, { idempotencyKey: "lead-002" });
 
-The example configuration lives in `examples/contact-sales/router.config.ts`.
-It defines the form schema and connects providers, people, round-robin pools,
-ordered rules, an assignment store, and a fallback redirect to `createRouter`.
+  console.log(first.outcome, first.personId); // assigned alex
+  console.log(first.id === retry.id); // true: same lead, same assignment
+  console.log(next.personId); // sam: a new lead advances the pool
+} finally {
+  store.close();
+}
+```
 
-| Location                                               | What to change                                             |
-| ------------------------------------------------------ | ---------------------------------------------------------- |
-| `examples/contact-sales/router.config.ts`              | Typed form schema, ordered rules, and router configuration |
-| `examples/contact-sales/fixtures/routing/`             | Representative and territory fixtures                      |
-| `examples/contact-sales/fixtures/attio/`               | Deterministic provider data                                |
-| `examples/contact-sales/fixtures/routing/scenarios.ts` | Presets and expected routing decisions                     |
+`when: { all: [] }` matches every validated input. Place this catch-all rule last
+when you add more specific rules.
 
-## Check your changes
+## 3. Run it
 
 ```sh
-npm test
-npm run typecheck
+npx tsx first-assignment.ts
 ```
 
-Default tests make no network requests. Run `npm run check` for the full code
-quality suite.
+Expected output:
+
+```text
+assigned alex
+true
+sam
+```
+
+This example starts with a fresh in-memory store every time. For persistence across
+process restarts, change `":memory:"` to `"./.data/routing.sqlite"`. Reusing a key
+returns its saved result even if the input or rules have since changed.
+
+## 4. Connect your application
+
+Use `result.redirectUrl` as the destination for your host application's redirect.
+An `assigned` result identifies a person; an `unassigned` result directs the visitor
+to your fallback or a rule-specific page. Assignment does not confirm a booked meeting.
+
+Next, [run the sales-form example](/examples/contact-sales),
+[add an ownership rule](/scenarios), or [read the router API](/reference/router).

@@ -1,0 +1,53 @@
+---
+title: "Production deployment · Planned"
+description: "The target deployment journey and the requirements still to be delivered."
+---
+
+<div className="planned-feature">
+  <span className="planned-label">Planned · Not a deployment runbook</span>
+  <h2>Deploy a reliable routing service</h2>
+  <p>The intended experience is a versioned SDK, a tested host integration, a durable
+  shared store, and an authenticated operations dashboard. This page describes that
+  target. The complete production deployment path is not available yet.</p>
+
+<h3>1. Install a release</h3>
+<p>
+  Choose a supported package version, runtime, and upgrade path. Deliverables: published packages,
+  compatibility policy, changelog, and migration instructions.
+</p>
+
+<h3>2. Connect the host</h3>
+<p>
+  Use a framework recipe with field-level validation, stable idempotency keys, request limits,
+  failure responses, and redirects. Deliverables: tested handlers and end-to-end examples.
+</p>
+
+<h3>3. Configure durable storage</h3>
+<p>
+  Share assignment state across replicas and survive restarts. Deliverables: managed database
+  adapters, migrations, backup and restore guidance, and documented concurrency guarantees under
+  deployment.
+</p>
+
+<h3>4. Secure operations</h3>
+<p>
+  Restrict dashboard and API access, manage secrets, and define data retention. Deliverables:
+  authentication guidance, role-based access, deletion and retention controls, and an operational
+  security guide.
+</p>
+
+  <h3>5. Observe and recover</h3>
+  <p>Monitor provider failures and empty pools, reconcile assignments with booked
+  meetings, and recover without advancing rotation twice. Deliverables: supported
+  telemetry integrations, alert recipes, booking webhooks, and recovery runbooks.</p>
+</div>
+
+## What you can use today
+
+The [TypeScript router](/reference/router), [SQLite store](/reference/storage), and
+[provider adapters](/integrations) are available in the repository. The
+[contact-sales example](/examples/contact-sales) demonstrates their composition locally.
+
+The example dashboard is not an authenticated production admin surface. SQLite
+needs a persistent local disk, and separate database files do not coordinate
+assignment. A custom production host must address these boundaries explicitly.

@@ -1,35 +1,56 @@
 ---
 title: "Open Routing"
-description: "An open-source routing engine for contact-sales forms."
+description: "Send every sales lead to the right person, with a decision you can explain."
 ---
 
-Open Routing validates a form submission, resolves company enrichment and CRM
-ownership, and selects a destination using routing rules and territories.
-Each decision includes the provider facts and rule trace that explain the result.
-
-The SDK is under active development. Start with the contact-sales example in this
-repository to explore its contracts and behavior.
+Define your routing policy in TypeScript. Validate a lead, preserve account ownership,
+assign new business across a team, and return the right booking destination.
 
 <CardGroup cols={2}>
-  <Card title="Run the example" icon="rocket" href="/quickstart">
-    Submit a form, follow its redirect, and inspect the recorded decision.
+  <Card title="Make your first assignment" icon="bolt" href="/quickstart">
+    Configure two people and a pool. Assign a lead and retry it safely.
   </Card>
-  <Card title="Explore the packages" icon="cubes" href="/packages">
-    Learn how the routing engine, Attio adapter, store, and dashboard fit together.
+  <Card title="Explore routing scenarios" icon="route" href="/scenarios">
+    Route by account owner, geography, company size, or request type.
+  </Card>
+  <Card title="Run a complete example" icon="code" href="/examples/contact-sales">
+    Connect a sales form, booking redirect, and decision dashboard.
+  </Card>
+  <Card title="API reference" icon="book-open" href="/reference/router">
+    Look up configuration, methods, return values, and failure behavior.
   </Card>
 </CardGroup>
 
-## From submission to destination
+## One policy, four steps
 
-1. Parse the submitted fields against a typed schema.
-2. Resolve normalized enrichment and CRM ownership through providers.
-3. Evaluate routing rules, ownership, and territories.
-4. Return an explainable decision to the host application.
-5. Let the host record the result and redirect the visitor.
+**Validate → Resolve company and owner → Match a rule → Commit an assignment**
 
-The core package contains no HTTP server, UI, vendor credentials, or example data.
-The contact-sales example supplies these application boundaries using deterministic
-fixtures so you can try it without a CRM account.
+Rules run in the order you define. Assign to an existing owner, a named person, or
+an eligible member of a round-robin pool. Every result carries a rule trace and
+provider facts. A stable idempotency key makes retries return the original assignment.
 
-See [submission and decision records](/decision-records) for the persistence
-lifecycle and privacy behavior.
+## Build your routing system
+
+| Goal                                       | Start here                                                     |
+| ------------------------------------------ | -------------------------------------------------------------- |
+| Share new leads across a team              | [Quickstart](/quickstart)                                      |
+| Keep existing accounts with their owner    | [Routing scenarios](/scenarios#keep-an-account-with-its-owner) |
+| Enrich company data before choosing a team | [Integrations](/integrations)                                  |
+| Handle retries without assigning twice     | [Assignment and storage](/reference/storage)                   |
+| Explain why a lead went to a person        | [Decision records](/decision-records)                          |
+
+## Availability
+
+The documented SDK is available from this repository. Packages are not yet published
+for installation from npm. Runnable examples use the current API; grey **Planned**
+sections describe the intended product experience and are not implementation instructions.
+
+<div className="planned-feature">
+  <span className="planned-label">Planned · Not available</span>
+  <h3>From first lead to production</h3>
+  <p>
+    Install a versioned SDK, add a framework adapter, deploy with a shared database, and reconcile
+    meeting outcomes. These are the next parts of the developer journey.
+  </p>
+  <a href="/guides/production">Explore the production guide →</a>
+</div>

@@ -1,12 +1,13 @@
 import { fileURLToPath } from "node:url";
 
-/** Read-only local dashboard assets. The host supplies GET /admin/api/submissions. */
+/** Local dashboard assets. The host supplies submission reads and protected workflow actions. */
 export function dashboardAsset(pathname: string): string | null {
   const files: Record<string, string> = {
     "/admin": "index.html",
     "/admin/": "index.html",
     "/admin/dashboard.css": "dashboard.css",
     "/admin/dashboard.js": "dashboard.js",
+    "/admin/workflow-panel.js": "workflow-panel.js",
     "/admin/pools": "pools.html",
     "/admin/pools/": "pools.html",
     "/admin/pools.js": "pools.js",

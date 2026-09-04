@@ -1,0 +1,62 @@
+---
+title: "Assignment and storage"
+description: "Persist assignments atomically and keep retries from consuming another turn."
+---
+
+## SQLite
+
+```ts
+import { sqliteStore } from "@open-routing/store-sqlite";
+
+const store = sqliteStore("./.data/routing.sqlite", schema);
+// Pass store to createRouter({ ...config, store }).
+// Close it during application shutdown:
+store.close();
+```
+
+`sqliteStore(filename, schema?)` implements both `AssignmentStore` and
+`DecisionStore`. Pass your form schema to apply its privacy policy. Use
+`":memory:"` for disposable examples and a persistent path for durable local state.
+
+## Retry contract
+
+One logical lead has one idempotency key. On a retry, the router returns its original
+assignment even if the submitted fields or configuration changed. Use a new key
+for a genuinely new opportunity. Keys identify retries; they do not authenticate callers.
+
+Pool selection, cursor advancement, and saving the assignment happen in one
+transaction. Concurrent attempts with the same key must resolve to the same saved
+result. A failed commit must not advance rotation.
+
+## Implement AssignmentStore
+
+| Method                      | Contract                                                                                            |
+| --------------------------- | --------------------------------------------------------------------------------------------------- |
+| `getAssignment(key)`        | Return the saved `AssignmentResult`, or `null`                                                      |
+| `getPoolCursor(poolId)`     | Return the last assigned person ID, or `null`                                                       |
+| `commitAssignment(request)` | Atomically recheck the key, select a candidate if supplied, advance the cursor, and save the result |
+
+Methods may return a value or a promise. `AssignmentRequest` contains
+`idempotencyKey`, the proposed `result`, and optional ordered `candidates` with
+`id` and `bookingUrl`. Rechecking inside the transaction is essential: a read
+before `commitAssignment` alone cannot prevent duplicate concurrent assignments.
+
+For an eligible pool, choose the person after the last assigned ID and wrap to
+the first member. If the previous person is absent, start with the first member.
+With no candidates, preserve the unassigned fallback and do not advance the pool.
+
+## Audit records are separate
+
+Assignment persistence is required for safe routing. Submission audit records
+explain each HTTP attempt and can fail independently without repeating assignment.
+See [decision records](/decision-records).
+
+<div className="planned-feature">
+  <span className="planned-label">Planned · Shared database adapters</span>
+  <h2>PostgreSQL and distributed deployment</h2>
+  <p>
+    Use a supported shared store across multiple application instances, with migrations and
+    concurrency tests. PostgreSQL and other managed-store adapters are not shipped. Do not use
+    independent SQLite files as one shared rotation.
+  </p>
+</div>

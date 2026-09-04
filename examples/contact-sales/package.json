@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "workflow:demo": "tsx src/workflow-demo.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@open-routing/attio": "0.0.0",
     "@open-routing/core": "0.0.0",
     "@open-routing/dashboard": "0.0.0",
     "@open-routing/pdl": "0.0.0",

@@ -1,0 +1,63 @@
+---
+title: "Integrations"
+description: "Connect company data, account ownership, and booking destinations."
+---
+
+## Attio ownership
+
+```ts
+import { attio } from "@open-routing/attio";
+
+const ownership = attio({ apiKey: process.env.ATTIO_API_KEY! });
+// createRouter({ ...config, providers: { ownership } });
+```
+
+Run the adapter on your server. It looks up company ownership and returns the
+[normalized ownership contract](/reference/providers#crmownershipprovider).
+Configure `people` with IDs that match the returned CRM owner IDs.
+
+Options include `companyObject` (default `companies`), `ownerAttribute` (default
+`account_owner`), and `timeoutMs` (default 2000). Use an
+[ownership-first rule](/scenarios#keep-an-account-with-its-owner) to preserve
+account relationships. Supplying an ownership provider does not itself write a CRM record.
+
+## People Data Labs enrichment
+
+```ts
+import { pdl } from "@open-routing/pdl";
+
+const enrichment = pdl({ apiKey: process.env.PDL_API_KEY! });
+// createRouter({ ...config, providers: { enrichment, ownership } });
+```
+
+Declare a `person.email` or `company.domain` role in your schema. PDL returns
+normalized company information for territory rules, including employee count and
+country when known. Calls require your PDL account and may consume provider credits.
+
+The adapter supports `timeoutMs` (default 2000), `minLikelihood` (default 6), and
+company-domain redirect resolution. Set `resolveRedirects: false` to look up the
+submitted domain directly. Missing and unavailable data remain distinct outcomes.
+
+## Booking links
+
+Set each person's `bookingUrl` to an HTTPS scheduling link. The host redirects to
+`AssignmentResult.redirectUrl`. This works with ordinary booking links without a
+scheduling API integration; it does not check calendar availability or confirm a booking.
+
+<div className="planned-feature">
+  <span className="planned-label">Planned · More CRM adapters</span>
+  <h2>Salesforce and HubSpot</h2>
+  <p>
+    Resolve account owners through the same provider contract. These adapters are not available. A
+    custom adapter can implement <code>CrmOwnershipProvider</code>.
+  </p>
+</div>
+
+<div className="planned-feature">
+  <span className="planned-label">Planned · Scheduling events</span>
+  <h2>Booking confirmation and cancellation</h2>
+  <p>
+    Connect verified scheduling events to assignments and reconcile the meeting lifecycle. Booking
+    links are supported; calendar and webhook adapters are not shipped.
+  </p>
+</div>

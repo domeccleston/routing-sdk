@@ -1,0 +1,101 @@
+---
+title: "Router API"
+description: "Configure routing, validate input, and create an assignment."
+---
+
+```ts
+import { createRouter } from "@open-routing/core";
+```
+
+## createRouter(config)
+
+Returns a router with `schema`, `parse`, `assign`, `getPoolState`, and
+`listPoolStates`. Use the [quickstart](/quickstart) for a complete configuration.
+
+| Property    | Required | Meaning                                                          |
+| ----------- | -------- | ---------------------------------------------------------------- |
+| `schema`    | Yes      | Form definition created with `defineSchema`                      |
+| `people`    | Yes      | Map of person IDs to `{ name, bookingUrl, active? }`             |
+| `pools`     | Yes      | Map of pool IDs to `{ name?, members, strategy: "round-robin" }` |
+| `rules`     | Yes      | Ordered array of routing rules; IDs must be unique               |
+| `fallback`  | Yes      | `{ redirect }` for an unassigned lead                            |
+| `store`     | Yes      | An `AssignmentStore` implementation                              |
+| `providers` | No       | Optional `enrichment` and `ownership` providers                  |
+
+A pool requires nonempty, unique member IDs that exist in `people`. Named rule
+targets must exist. People are active unless `active` is `false`. Booking URLs
+must use HTTPS without embedded credentials; fallback and rule redirects also
+accept local absolute paths such as `/thanks`.
+
+## router.parse(rawInput, options?)
+
+Validates an unknown object and returns the schema's inferred input type. Pass
+`{ coerce: true }` to parse integer and boolean form strings. Validation errors
+throw `SubmissionValidationError` with an `issues` array.
+
+See [schema and validation](/reference/schema).
+
+## await router.assign(input, { idempotencyKey })
+
+Returns `Promise<AssignmentResult>`. The key must be nonblank and at most 200
+characters. Use one key per logical lead, reused across retries.
+
+A saved assignment is returned before validation or provider calls. Otherwise,
+`assign` validates input, resolves providers, evaluates rules, and commits the
+result through the store. It does not perform an HTTP redirect or write to your CRM.
+
+### Result
+
+| Field         | Meaning                                                   |
+| ------------- | --------------------------------------------------------- |
+| `id`          | Stable assignment ID returned on retries                  |
+| `outcome`     | `assigned` or `unassigned`                                |
+| `redirectUrl` | Selected person's booking URL, rule redirect, or fallback |
+| `personId`    | Selected person, when assigned                            |
+| `poolId`      | Selected pool, when a pool rule matched                   |
+| `ruleId`      | Rule responsible for the result, when one matched         |
+| `reason`      | Explanation for an unassigned result, when provided       |
+| `facts`       | Normalized company and ownership results                  |
+| `trace`       | Evaluated leaf conditions and their matches               |
+| `warnings`    | Provider availability or owner-eligibility warnings       |
+
+Built-in unassigned reasons include `no_matching_rule`, `no_active_members`,
+`person_inactive`, and `rule_redirect`. A redirect rule may supply its own reason.
+A successful assignment means a destination was selected, not that a meeting was booked.
+
+### Failures
+
+Invalid configuration throws during router creation. Invalid new input throws
+`SubmissionValidationError`. Invalid keys, missing provider lookup roles, thrown
+provider errors, and storage failures reject `assign`. Handle these in the host;
+do not return a successful booking redirect when assignment storage fails.
+
+## Pool inspection
+
+`await router.getPoolState(poolId)` returns the pool name, strategy, member activity,
+`lastAssignedPersonId`, `eligiblePersonIds`, and `nextPersonId`.
+`await router.listPoolStates()` returns all configured pool states.
+
+Inspection is read-only. `nextPersonId` is a snapshot, not a reservation: another
+assignment can advance the pool before your next request.
+
+## Rule evaluation
+
+Each rule has `id`, `when`, and exactly one action: `assign` or `redirect`.
+Assignment targets are `{ person: id }`, `{ pool: id }`, or `{ owner: true }`.
+
+Conditions read dotted paths under `input`, `company`, or `crm.owner`. Operators
+are `equals`, `notEquals`, `in`, `gte`, and `lte`, with nested `all` and `any` groups.
+Equality is strict; numeric comparisons require numbers. A missing value does not
+match `notEquals`. Empty `all` matches; empty `any` does not.
+
+The first matching rule normally ends evaluation. An ineligible CRM owner is the
+exception: the router continues to the next rule. See [worked scenarios](/scenarios).
+
+<div className="planned-feature">
+  <span className="planned-label">Planned · Simulation API</span>
+  <p>
+    Evaluate a candidate policy without writing an assignment or advancing a pool. Method names and
+    signatures are not finalized.
+  </p>
+</div>

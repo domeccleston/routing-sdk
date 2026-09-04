@@ -1,0 +1,37 @@
+/* Planned content remains readable, selectable, and keyboard-accessible. */
+.planned-feature {
+  margin: 1.75rem 0;
+  padding: 1.25rem 1.5rem;
+  border: 1px dashed #9ca3af;
+  border-radius: 0.75rem;
+  background: #f3f4f6;
+  color: #4b5563;
+}
+.planned-feature :is(h2, h3, p, a, code) {
+  color: inherit;
+}
+.planned-feature :is(h2, h3):first-of-type {
+  margin-top: 0.75rem;
+}
+.planned-label {
+  display: inline-block;
+  color: #4b5563;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.dark .planned-feature {
+  background: #1f2937;
+  border-color: #6b7280;
+  color: #d1d5db;
+}
+.dark .planned-label {
+  color: #d1d5db;
+}
+:is(#sidebar, #mobile-nav) a[href="/guides/production"] {
+  color: #6b7280;
+}
+.dark :is(#sidebar, #mobile-nav) a[href="/guides/production"] {
+  color: #9ca3af;
+}

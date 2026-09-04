@@ -1,4 +1,8 @@
+import { workflowPanel, workflowLabel } from "./workflow-panel.js";
+
 const $ = (id) => document.getElementById(id);
+let csrfToken = "",
+  actionPending = false;
 let offset = 0,
   selected = null,
   loading = false;
@@ -46,6 +50,15 @@ function show(record) {
   }))
     data.append(node("dt", key), node("dd", value));
   detail.append(data);
+  detail.append(
+    workflowPanel(record.workflow, {
+      token: csrfToken,
+      onChanged: refresh,
+      onBusy: (busy) => {
+        actionPending = busy;
+      },
+    }),
+  );
   if (record.decision?.redirectUrl || record.decision?.target) {
     detail.append(node("h3", "Destination", "section-title"));
     const url = record.decision.redirectUrl ?? record.decision.target.url;
@@ -84,7 +97,8 @@ function show(record) {
   }
 }
 async function refresh() {
-  if (loading) return;
+  // Polling must not replace a note or steal focus while the user reviews a proposal.
+  if (loading || actionPending || $("detail").contains(document.activeElement)) return;
   loading = true;
   try {
     const query = new URLSearchParams({
@@ -95,7 +109,8 @@ async function refresh() {
     const response = await fetch(`/admin/api/submissions?${query}`, { cache: "no-store" });
     if (!response.ok)
       throw new Error("Unable to load submissions. Check the local server and try again.");
-    const { records, total } = await response.json();
+    const { records, total, csrfToken: token } = await response.json();
+    csrfToken = token;
     $("error").hidden = true;
     $("total").textContent = total;
     $("routed").textContent = records.filter((r) =>
@@ -124,6 +139,13 @@ async function refresh() {
         badge(record),
         node("small", record.decision?.ruleId ?? record.decision?.route ?? "—"),
       );
+      decision.append(
+        node(
+          "small",
+          workflowLabel(record.workflow),
+          record.workflow?.status === "awaiting_approval" ? "needs-review" : "",
+        ),
+      );
       row.append(
         company,
         decision,
@@ -140,7 +162,7 @@ async function refresh() {
       $("rows").append(row);
     }
     const current = records.find((r) => r.id === selected);
-    if (current) show(current);
+    if (current && !actionPending && !$("detail").contains(document.activeElement)) show(current);
     $("previous").disabled = offset === 0;
     $("next").disabled = offset + limit >= total;
     $("page").textContent = total

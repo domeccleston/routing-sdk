@@ -6,6 +6,45 @@ export interface AttioOptions {
   companyObject?: string;
   ownerAttribute?: string;
   timeoutMs?: number;
+  /** Inject a transport for offline tests/examples. Defaults to the platform fetch. */
+  fetch?: typeof fetch;
+}
+
+export type AttioValue =
+  | null
+  | boolean
+  | number
+  | string
+  | AttioValue[]
+  | { [key: string]: AttioValue };
+export type AttioWriteResult = { recordId: string; url: string | null };
+export interface AttioClient extends CrmOwnershipProvider {
+  updateCompany(input: {
+    recordId: string;
+    values: Record<string, AttioValue>;
+    signal?: AbortSignal;
+  }): Promise<AttioWriteResult>;
+  upsertCompany(input: {
+    matchingAttribute: string;
+    values: Record<string, AttioValue>;
+    signal?: AbortSignal;
+  }): Promise<AttioWriteResult>;
+}
+export class AttioWriteError extends Error {
+  constructor(
+    public readonly code:
+      | "unauthorized"
+      | "rate_limited"
+      | "invalid_request"
+      | "not_found"
+      | "timeout"
+      | "cancelled"
+      | "provider_error",
+    public readonly status: number | null = null,
+  ) {
+    super(`Attio write failed: ${code}`);
+    this.name = "AttioWriteError";
+  }
 }
 
 interface AttioCompanyRecord {
@@ -26,22 +65,74 @@ function failure(status: number): OwnershipResult {
   return { status: "unavailable", reason: "provider_error" };
 }
 
-export function attio(options: AttioOptions): CrmOwnershipProvider {
+export function attio(options: AttioOptions): AttioClient {
   const baseUrl = (options.baseUrl ?? "https://api.attio.com/v2").replace(/\/$/, "");
   const companyObject = options.companyObject ?? "companies";
   const ownerAttribute = options.ownerAttribute ?? "account_owner";
   const timeoutMs = options.timeoutMs ?? 2_000;
+  const transport = options.fetch ?? fetch;
   let members: Map<string, AttioMember> | undefined;
 
   async function request(path: string, init?: RequestInit): Promise<Response> {
-    return fetch(`${baseUrl}${path}`, {
+    return transport(`${baseUrl}${path}`, {
       ...init,
-      signal: AbortSignal.timeout(timeoutMs),
+      redirect: "error",
+      signal: init?.signal
+        ? AbortSignal.any([init.signal, AbortSignal.timeout(timeoutMs)])
+        : AbortSignal.timeout(timeoutMs),
       headers: {
         Authorization: `Bearer ${options.apiKey}`,
         ...init?.headers,
       },
     });
+  }
+
+  async function write(
+    path: string,
+    method: string,
+    values: Record<string, AttioValue>,
+    signal?: AbortSignal,
+  ): Promise<AttioWriteResult> {
+    try {
+      signal?.throwIfAborted();
+      const response = await request(path, {
+        method,
+        ...(signal ? { signal } : {}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: { values } }),
+      });
+      if (!response.ok)
+        throw new AttioWriteError(
+          response.status === 401 || response.status === 403
+            ? "unauthorized"
+            : response.status === 429
+              ? "rate_limited"
+              : response.status === 404
+                ? "not_found"
+                : response.status >= 400 && response.status < 500
+                  ? "invalid_request"
+                  : "provider_error",
+          response.status,
+        );
+      const body = (await response.json()) as {
+        data?: { id?: { record_id?: string }; web_url?: string };
+      };
+      if (typeof body.data?.id?.record_id !== "string" || !body.data.id.record_id.trim())
+        throw new AttioWriteError("provider_error");
+      return {
+        recordId: body.data.id.record_id,
+        url: typeof body.data.web_url === "string" ? body.data.web_url : null,
+      };
+    } catch (error) {
+      if (error instanceof AttioWriteError) throw error;
+      throw new AttioWriteError(
+        signal?.aborted
+          ? "cancelled"
+          : error instanceof Error && error.name === "TimeoutError"
+            ? "timeout"
+            : "provider_error",
+      );
+    }
   }
 
   async function memberById(id: string): Promise<AttioMember | undefined> {
@@ -61,6 +152,25 @@ export function attio(options: AttioOptions): CrmOwnershipProvider {
 
   return {
     name: "attio",
+    updateCompany({ recordId, values, signal }) {
+      if (!recordId.trim()) throw new AttioWriteError("invalid_request");
+      return write(
+        `/objects/${encodeURIComponent(companyObject)}/records/${encodeURIComponent(recordId)}`,
+        "PATCH",
+        values,
+        signal,
+      );
+    },
+    upsertCompany({ matchingAttribute, values, signal }) {
+      if (!matchingAttribute.trim() || !Object.hasOwn(values, matchingAttribute))
+        throw new AttioWriteError("invalid_request");
+      return write(
+        `/objects/${encodeURIComponent(companyObject)}/records?matching_attribute=${encodeURIComponent(matchingAttribute)}`,
+        "PUT",
+        values,
+        signal,
+      );
+    },
     async findOwner({ domain }: CompanyLookup): Promise<OwnershipResult> {
       try {
         const response = await request(`/objects/${companyObject}/records/query`, {

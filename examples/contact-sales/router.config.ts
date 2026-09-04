@@ -4,6 +4,7 @@ import {
   type RoutingRule,
   type AssignmentStore,
   type CompanyEnrichmentProvider,
+  type CrmOwnershipProvider,
 } from "@open-routing/core";
 
 import repsFixture from "./fixtures/routing/reps.json" with { type: "json" };
@@ -58,12 +59,13 @@ export const contactSalesSchema = defineSchema({
 export const createContactSalesRouter = (
   store: AssignmentStore,
   enrichment: CompanyEnrichmentProvider = fixtureEnrichment,
+  ownership: CrmOwnershipProvider = fixtureOwnership,
 ) =>
   createRouter({
     schema: contactSalesSchema,
     providers: {
       enrichment,
-      ownership: fixtureOwnership,
+      ownership,
     },
     people: Object.fromEntries(repsFixture.map(({ id, ...person }) => [id, person])),
     pools: Object.fromEntries(

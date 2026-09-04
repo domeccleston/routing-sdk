@@ -4,6 +4,75 @@
   background: #f6f7f4;
   font-size: 14px;
 }
+.workflow-panel {
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid #dfe6dc;
+  border-radius: 8px;
+  background: #fafcf8;
+  font-size: 12px;
+}
+.workflow-panel .section-title {
+  margin: 4px 0 12px;
+}
+.workflow-panel .detail-heading {
+  flex-wrap: wrap;
+}
+.research-brief {
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+.workflow-proposal {
+  padding: 12px;
+  margin: 12px 0;
+  border-left: 2px solid #b78d40;
+  background: #fcf5e7;
+}
+.workflow-proposal p {
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+.workflow-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.workflow-actions label {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+}
+.workflow-actions textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  padding: 10px;
+  border: 1px solid #dce3d8;
+  border-radius: 6px;
+}
+.workflow-actions textarea:focus-visible {
+  outline: 3px solid #8db39a;
+  outline-offset: 2px;
+}
+.workflow-error,
+.workflow-feedback {
+  color: #a24436;
+}
+.workflow-feedback:empty {
+  display: none;
+}
+.badge.awaiting_approval {
+  background: #fcf1dc;
+  color: #946f25;
+}
+.badge.completed {
+  background: #e5f2e9;
+  color: #28734b;
+}
+td small.needs-review {
+  color: #946f25;
+  font-weight: 600;
+}
 .analytics-charts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));

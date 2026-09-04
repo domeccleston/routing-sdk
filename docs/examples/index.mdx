@@ -1,0 +1,36 @@
+---
+title: "Examples"
+description: "Start from a complete application or a focused integration recipe."
+---
+
+<CardGroup cols={2}>
+  <Card title="First assignment" icon="bolt" href="/quickstart">
+    A complete TypeScript example: two people, one pool, and safe retries.
+  </Card>
+  <Card title="Contact-sales form" icon="browser" href="/examples/contact-sales">
+    An HTML form, Node.js server, booking redirect, and local dashboard.
+  </Card>
+</CardGroup>
+
+The examples demonstrate how to use the SDK. [Scenarios](/scenarios) explain
+which routing policies to choose and how to combine them.
+
+<div className="planned-feature">
+  <span className="planned-label">Planned · Framework recipes</span>
+  <h2>Next.js, Express, and serverless handlers</h2>
+  <p>
+    Copy a complete request handler with validation responses, a durable store, idempotency, and
+    redirects. Each recipe should include a working application and an integration test. Dedicated
+    recipes and framework adapters are not available yet.
+  </p>
+</div>
+
+<div className="planned-feature">
+  <span className="planned-label">Planned · Meeting lifecycle</span>
+  <h2>From assignment to confirmed booking</h2>
+  <p>
+    Receive a signed scheduling webhook, reconcile it with the original assignment, and handle
+    cancellations or rescheduling without assigning the lead again. Webhook ingestion and booking
+    reconciliation are not implemented.
+  </p>
+</div>

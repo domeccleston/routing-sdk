@@ -1,0 +1,70 @@
+---
+title: "Schema and validation"
+description: "Define the form contract once for TypeScript and runtime validation."
+---
+
+```ts
+import { defineSchema, parseSubmission, SubmissionValidationError } from "@open-routing/core";
+import type { InferInput } from "@open-routing/core";
+
+const schema = defineSchema({
+  workEmail: { type: "email", required: true, role: "person.email", privacy: "mask" },
+  seats: { type: "integer", required: true, minimum: 1 },
+  requestType: { type: "enum", values: ["sales", "support"], required: true },
+  message: { type: "string", privacy: "omit" },
+});
+type Lead = InferInput<typeof schema>;
+
+const lead: Lead = parseSubmission(
+  schema,
+  {
+    workEmail: "buyer@acme.example",
+    seats: "20",
+    requestType: "sales",
+  },
+  { coerce: true },
+);
+```
+
+## Field types
+
+| Type      | Accepted value                               | Additional options   |
+| --------- | -------------------------------------------- | -------------------- |
+| `string`  | String                                       | —                    |
+| `email`   | String passing basic email-format validation | —                    |
+| `integer` | Integer                                      | `minimum`, `maximum` |
+| `boolean` | Boolean                                      | —                    |
+| `enum`    | One of the declared strings                  | `values`             |
+
+All fields accept `required`, `label`, `role`, and `privacy`. Fields are optional
+unless `required: true`. Null, undefined, and empty strings count as missing.
+Undeclared fields are rejected. Strings are not automatically trimmed.
+
+`defineSchema` preserves the schema's inferred type. Validation occurs when you
+call `parseSubmission`, `router.parse`, or assign a new lead.
+
+## Form coercion
+
+With `coerce: true`, integer strings such as `"20"` become numbers and the exact
+strings `"true"` and `"false"` become booleans. Checkbox values such as `"on"` need
+normalization in your handler. Coercion is off by default.
+
+## Provider lookup roles
+
+`person.email` supplies an email domain, `company.domain` supplies an explicit
+domain, and `company.name` supplies optional matching evidence. Explicit domain
+takes precedence over the email domain. Configure a domain or email role when
+using providers. See [provider contracts](/reference/providers).
+
+## Privacy
+
+`plain` retains a value, `mask` redacts it, and `omit` excludes it from stored input.
+Privacy flags affect recorded data and rule traces; providers and rule evaluation
+still receive the values they need. Normalized provider facts can contain owner
+identities. Read [decision records](/decision-records) for the boundary.
+
+## Validation errors
+
+Catch `SubmissionValidationError` and inspect `issues`, an array of
+`{ field, message }`. Surface field errors to the submitter; leave other errors
+for the host's operational error handling.
