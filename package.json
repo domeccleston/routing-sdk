@@ -11,6 +11,8 @@
     "node": ">=22"
   },
   "scripts": {
+    "docs:dev": "cd docs && npx --yes mint@4.2.873 dev --port 3001",
+    "docs:check": "cd docs && npx --yes mint@4.2.873 validate && npx --yes mint@4.2.873 broken-links",
     "dev": "npm run dev --workspace=@open-routing/example-contact-sales",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

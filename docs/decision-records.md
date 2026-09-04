@@ -1,3 +1,8 @@
+---
+title: "Submission and decision model"
+description: "Record lifecycle, privacy filtering, and local persistence limitations."
+---
+
 # Submission and decision model
 
 One `SubmissionRecord` represents a received form POST. Its ID exists before

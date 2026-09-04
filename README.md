@@ -56,3 +56,21 @@ root `.env.local` file before running `npm run test:attio`.
 With `npm run dev` running, open <http://localhost:3000/admin>. New form submissions
 are stored in SQLite and shown with their decisions and provider data. See
 [the data model](docs/decision-records.md) for privacy and lifecycle details.
+
+## Documentation
+
+The Mintlify site lives in `docs/`. Preview it at <http://localhost:3001>:
+
+```sh
+npm run docs:dev
+```
+
+Run `npm run docs:check` to validate the site and check internal links. These
+commands download and run a pinned Mintlify CLI on first use.
+
+For Mintlify project `6a9a82f204bdc285e8c8bca2`, configure
+[Mintlify Git Settings](https://app.mintlify.com) with
+repository `domeccleston/routing-sdk`, the branch containing the docs, and
+documentation directory `docs`. The Mintlify GitHub App must have access to this
+repository. Push the docs to the configured branch to trigger a deployment.
+The project ID is dashboard metadata; it does not belong in `docs.json`.
